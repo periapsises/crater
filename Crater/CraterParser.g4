@@ -2,4 +2,6 @@
 
 options { tokenVocab = CraterLexer; }
 
-program: IDENTIFIER+ EOF;
+program: variableDeclaration+ EOF;
+
+variableDeclaration: name=IDENTIFIER COLON type=IDENTIFIER;
