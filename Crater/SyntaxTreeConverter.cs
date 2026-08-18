@@ -2,23 +2,23 @@ using Crater.Antlr;
 
 namespace Crater;
 
-public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
+public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
 {
-    public override object VisitProgram(CraterParser.ProgramContext context)
+    public override Node VisitProgram(CraterParser.ProgramContext context)
     {
-        var variableDeclarations = new List<object>();
+        var variableDeclarations = new List<Node>();
         
         foreach (var variableDeclaration in context.variableDeclaration())
             variableDeclarations.Add(Visit(variableDeclaration));
 
-        return variableDeclarations;
+        return new Program(variableDeclarations, Source.FromContext(context));
     }
 
-    public override object VisitVariableDeclaration(CraterParser.VariableDeclarationContext context)
+    public override Node VisitVariableDeclaration(CraterParser.VariableDeclarationContext context)
     {
         var name = context.name.Text;
         var type = context.type.Text;
 
-        return (name, type);
+        return new VariableDeclaration(name, type, Source.FromContext(context));
     }
 }

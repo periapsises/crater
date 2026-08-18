@@ -1,9 +1,10 @@
 ﻿using Antlr4.Runtime;
 using Crater.Antlr;
+using Crater.SemanticAnalysis;
 
 namespace Crater;
 
-public static class Program
+public static class Crater
 {
     public static void Main(string[] args)
     {
@@ -13,8 +14,14 @@ public static class Program
         var craterParser = new CraterParser(tokenStream);
 
         var syntaxTreeConverter = new SyntaxTreeConverter();
-        var result = syntaxTreeConverter.Visit(craterParser.program());
+        var node = syntaxTreeConverter.Visit(craterParser.program());
+
+        if (node is not Program program)
+            throw new Exception("Failed to convert resulting tree.");
+
+        var semanticAnalyzer = new SemanticAnalyzer();
+        semanticAnalyzer.AnalyzeProgram(program);
         
-        Console.WriteLine(result);
+        Console.WriteLine(program);
     }
 }
