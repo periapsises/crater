@@ -8,7 +8,7 @@ public static class Crater
 {
     public static void Main(string[] args)
     {
-        var inputStream = new AntlrInputStream("hello: world\nhello: world")
+        var inputStream = new AntlrInputStream("hello: world\nworld: helo")
         {
             name = "Unknown"
         };
@@ -25,7 +25,8 @@ public static class Crater
 
         var semanticAnalyzer = new SemanticAnalyzer();
         semanticAnalyzer.AnalyzeProgram(program);
-        
-        Console.WriteLine(program);
+
+        var output = Compiler.Compile(program);
+        Console.WriteLine(output);
     }
 }
