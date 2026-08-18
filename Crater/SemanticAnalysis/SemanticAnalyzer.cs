@@ -1,3 +1,5 @@
+using Crater.SyntaxTree;
+
 namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer

@@ -1,4 +1,4 @@
-namespace Crater;
+namespace Crater.SyntaxTree;
 
 public abstract record Node(Source source);
 

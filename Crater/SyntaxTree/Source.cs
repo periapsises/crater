@@ -1,6 +1,6 @@
 using Antlr4.Runtime;
 
-namespace Crater;
+namespace Crater.SyntaxTree;
 
 public class Source(int startLine, int startColumn, int stopLine, int stopColumn, string file)
 {

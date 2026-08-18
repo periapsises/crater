@@ -1,6 +1,6 @@
 using Crater.Antlr;
 
-namespace Crater;
+namespace Crater.SyntaxTree;
 
 public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
 {

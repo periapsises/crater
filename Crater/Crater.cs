@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime;
 using Crater.Antlr;
 using Crater.SemanticAnalysis;
+using Crater.SyntaxTree;
 
 namespace Crater;
 
