@@ -20,7 +20,7 @@ public class SemanticAnalyzer
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
         if (_variables.ContainsKey(variableDeclaration.name))
-            throw new Exception($"Variable '{variableDeclaration.name}' already exists");
+            throw new Exception($"{variableDeclaration.source.File}:{variableDeclaration.source.StartLine}:{variableDeclaration.source.StopColumn}\n  Variable '{variableDeclaration.name}' already exists");
 
         _variables[variableDeclaration.name] = variableDeclaration.type;
     }

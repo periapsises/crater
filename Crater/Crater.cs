@@ -8,7 +8,11 @@ public static class Crater
 {
     public static void Main(string[] args)
     {
-        var inputStream = new AntlrInputStream("hello: world");
+        var inputStream = new AntlrInputStream("hello: world\nhello: world")
+        {
+            name = "Unknown"
+        };
+        
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
