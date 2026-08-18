@@ -35,6 +35,9 @@ public class Compiler
 
     private void CompileVariableDeclaration(VariableDeclaration variableDeclaration)
     {
+        if (variableDeclaration.local)
+            _builder.Append("local ");
+            
         _builder.AppendLine(variableDeclaration.name);
     }
 }

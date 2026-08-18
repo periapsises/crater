@@ -16,9 +16,10 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
 
     public override Node VisitVariableDeclaration(CraterParser.VariableDeclarationContext context)
     {
+        var local = context.LOCAL() != null;
         var name = context.name.Text;
         var type = context.type.Text;
 
-        return new VariableDeclaration(name, type, Source.FromContext(context));
+        return new VariableDeclaration(local, name, type, Source.FromContext(context));
     }
 }

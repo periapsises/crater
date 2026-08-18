@@ -9,7 +9,13 @@ public static class Crater
 {
     public static void Main(string[] args)
     {
-        var inputStream = new AntlrInputStream("hello: world\nworld: helo")
+        const string source = """
+                              hello: world
+                              world: hello
+                              local hello: hi
+                              """;
+        
+        var inputStream = new AntlrInputStream(source)
         {
             name = "Unknown"
         };

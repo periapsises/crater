@@ -4,4 +4,4 @@ options { tokenVocab = CraterLexer; }
 
 program: variableDeclaration+ EOF;
 
-variableDeclaration: name=IDENTIFIER COLON type=IDENTIFIER;
+variableDeclaration: LOCAL? name=IDENTIFIER COLON type=IDENTIFIER;
