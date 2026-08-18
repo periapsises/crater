@@ -4,8 +4,14 @@ namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer
 {
-    private readonly Dictionary<string, string> _localVariables = new();
-    private readonly Dictionary<string, string> _globalVariables = new();
+    private readonly Environment _global;
+    private Environment _local;
+
+    public SemanticAnalyzer()
+    {
+        _global = new Environment();
+        _local = new Environment(_global);
+    }
     
     public void AnalyzeProgram(Program program)
     {
@@ -22,11 +28,11 @@ public class SemanticAnalyzer
 
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
-        var env = variableDeclaration.local ? _localVariables : _globalVariables;
+        var env = variableDeclaration.local ? _global : _local;
         
-        if (env.ContainsKey(variableDeclaration.name))
+        if (env.GetType(variableDeclaration.name) != null)
             throw new Exception($"{variableDeclaration.source.File}:{variableDeclaration.source.StartLine}:{variableDeclaration.source.StopColumn}\n  Variable '{variableDeclaration.name}' already exists");
 
-        env[variableDeclaration.name] = variableDeclaration.type;
+        env.Define(variableDeclaration.name, variableDeclaration.type);
     }
 }
