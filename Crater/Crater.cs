@@ -1,5 +1,6 @@
 ﻿using Antlr4.Runtime;
 using Crater.Antlr;
+using Crater.Compilation;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 
@@ -13,6 +14,10 @@ public static class Crater
                               hello: world
                               world: hello
                               local hello: hi
+                              
+                              do
+                                  local hi: what
+                              end
                               """;
         
         var inputStream = new AntlrInputStream(source)
