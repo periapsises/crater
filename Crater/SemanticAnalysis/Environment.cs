@@ -16,6 +16,6 @@ public class Environment(Environment? parent = null)
         if (_symbolTypes.TryGetValue(name, out var type))
             return type;
 
-        return parent?.GetType(name);
+        return Parent?.GetType(name);
     }
 }
