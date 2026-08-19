@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Crater.SyntaxTree;
 
 namespace Crater.SemanticAnalysis;
@@ -12,16 +13,30 @@ public class SemanticAnalyzer
         _global = new Environment();
         _local = new Environment(_global);
     }
+
+    private void EnterScope() => _local = new Environment(_local);
+
+    private void ExitScope() => _local = _local.Parent ?? throw new NullReferenceException("Cannot exit global scope");
     
     public void AnalyzeProgram(Program program)
     {
-        foreach (var node in program.nodes)
+        AnalyzeBlock(program.block);
+    }
+
+    private void AnalyzeBlock(Block block)
+    {
+        foreach (var statement in block.statements)
         {
-            switch (node)
+            switch (statement)
             {
                 case VariableDeclaration variableDeclaration:
                     AnalyzeVariableDeclaration(variableDeclaration);
                     break;
+                case DoStatement doStatement:
+                    AnalyzeDoStatement(doStatement);
+                    break;
+                default:
+                    throw new SwitchExpressionException(statement);
             }
         }
     }
@@ -34,5 +49,12 @@ public class SemanticAnalyzer
             throw new Exception($"{variableDeclaration.source.File}:{variableDeclaration.source.StartLine}:{variableDeclaration.source.StopColumn}\n  Variable '{variableDeclaration.name}' already exists");
 
         env.Define(variableDeclaration.name, variableDeclaration.type);
+    }
+
+    private void AnalyzeDoStatement(DoStatement doStatement)
+    {
+        EnterScope();
+        AnalyzeBlock(doStatement.block);
+        ExitScope();
     }
 }
