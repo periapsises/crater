@@ -2,6 +2,15 @@
 
 options { tokenVocab = CraterLexer; }
 
-program: variableDeclaration+ EOF;
+program: block EOF;
+
+block: statement*;
+
+statement
+    : variableDeclaration
+    | doStatement
+    ;
 
 variableDeclaration: LOCAL? name=IDENTIFIER COLON type=IDENTIFIER;
+
+doStatement: DO block END;
