@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime;
 using Crater.Antlr;
 using Crater.Compilation;
+using Crater.Diagnostics;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 
@@ -17,6 +18,7 @@ public static class Crater
                               
                               do
                                   local hi: what
+                                  local hello: sup
                               end
                               """;
         
@@ -35,9 +37,17 @@ public static class Crater
         if (node is not Program program)
             throw new Exception("Failed to convert resulting tree.");
 
-        var semanticAnalyzer = new SemanticAnalyzer();
+        var reporter = new DiagnosticBag();
+        
+        var semanticAnalyzer = new SemanticAnalyzer(reporter);
         semanticAnalyzer.AnalyzeProgram(program);
 
+        foreach (var diagnostic in reporter)
+            Console.WriteLine($"[{diagnostic.code}] {diagnostic.message} at line {diagnostic.source.StartLine}");
+
+        if (reporter.hasErrors)
+            return;
+        
         var output = Compiler.Compile(program);
         Console.WriteLine(output);
     }

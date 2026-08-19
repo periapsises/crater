@@ -1,15 +1,20 @@
 using System.Runtime.CompilerServices;
+using Crater.Diagnostics;
 using Crater.SyntaxTree;
 
 namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer
 {
+    private readonly IDiagnosticReporter _reporter;
+    
     private readonly Environment _global;
     private Environment _local;
 
-    public SemanticAnalyzer()
+    public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
+        _reporter = reporter;
+        
         _global = new Environment();
         _local = new Environment(_global);
     }
@@ -46,7 +51,8 @@ public class SemanticAnalyzer
         var env = variableDeclaration.local ? _global : _local;
         
         if (env.GetType(variableDeclaration.name) != null)
-            throw new Exception($"{variableDeclaration.source.File}:{variableDeclaration.source.StartLine}:{variableDeclaration.source.StopColumn}\n  Variable '{variableDeclaration.name}' already exists");
+            // TODO: Proper error codes
+            _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
 
         env.Define(variableDeclaration.name, variableDeclaration.type);
     }
