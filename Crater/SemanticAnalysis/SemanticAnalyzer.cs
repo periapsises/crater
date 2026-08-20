@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Crater.Diagnostics;
+using Crater.Diagnostics.Codes;
 using Crater.SemanticAnalysis.Types;
 using Crater.SyntaxTree;
 
@@ -70,14 +71,12 @@ public class SemanticAnalyzer
         var env = variableDeclaration.local ? _global : _local;
 
         if (env.GetType(variableDeclaration.name) != null)
-            // TODO: Proper error codes
-            _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
+            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
 
         var type = _types.GetValueOrDefault(variableDeclaration.type.name);
         if (type == null)
         {
-            // TODO: Proper error codes
-            _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
             type = UnknownType;
         }
 
@@ -90,29 +89,17 @@ public class SemanticAnalyzer
             if (!type.CanHold(initializerType))
             {
                 if (initializerType is NilType)
-                {
-                    // TODO: Proper error codes
-                    _reporter.Report(new Diagnostic("0", $"Cannot assign nil to '{variableDeclaration.name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
-                }
+                    _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{variableDeclaration.name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
                 else
-                {
-                    // TODO: Proper error codes
-                    _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
-                }
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
             }
         }
         else
         {
             if (!variableDeclaration.local)
-            {
-                // TODO: Proper error codes
-                _reporter.Report(new Diagnostic("0", $"Global variable '{variableDeclaration.name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
-            }
+                _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"Global variable '{variableDeclaration.name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
             else if (type is not NullableType)
-            {
-                // TODO: Proper error  codes
-                _reporter.Report(new Diagnostic("0", $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
-            }
+                _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
         }
 
         env.Define(variableDeclaration.name, type);
@@ -130,8 +117,7 @@ public class SemanticAnalyzer
         var variableType = _local.GetType(assignment.variable);
         if (variableType == null)
         {
-            // TODO: Proper error codes
-            _reporter.Report(new Diagnostic("0", $"Variable '{assignment.variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
+            _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{assignment.variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
             return;
         }
 
@@ -139,8 +125,7 @@ public class SemanticAnalyzer
         if (variableType.CanHold(valueType))
             return;
 
-        // TODO: Proper error codes
-        _reporter.Report(new Diagnostic("0", $"Cannot assign value of type '{valueType.Name}' to variable of type '{variableType.Name}'", DiagnosticSeverity.Error, assignment.source));
+        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Name}' to variable of type '{variableType.Name}'", DiagnosticSeverity.Error, assignment.source));
     }
 
     private Type AnalyzeExpression(Expression expression)
