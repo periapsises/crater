@@ -40,17 +40,17 @@ jobs:
             - name: Publish & Package Windows Executable
               run: |
                   dotnet publish -c Release -r win-x64 -p:AssemblyName=crater-win64
-                  zip -j crater-win64.zip bin/Release/net9.0/win-x64/publish/crater-win64.exe
+                  zip -j crater-win64.zip Crater/bin/Release/net9.0/win-x64/publish/crater-win64.exe
 
             - name: Publish & Package Linux Executable
               run: |
                   dotnet publish -c Release -r linux-x64 -p:AssemblyName=crater-linux64
-                  tar -czvf crater-linux64.tar.gz -C bin/Release/net9.0/linux-x64/publish crater-linux64
+                  tar -czvf crater-linux64.tar.gz -C Crater/bin/Release/net9.0/linux-x64/publish crater-linux64
 
             - name: Publish & Package macOS Executable
               run: |
                   dotnet publish -c Release -r osx-arm64 -p:AssemblyName=crater-osx-arm64
-                  tar -czvf crater-osx-arm64.tar.gz -C bin/Release/net9.0/osx-arm64/publish crater-osx-arm64
+                  tar -czvf crater-osx-arm64.tar.gz -C Crater/bin/Release/net9.0/osx-arm64/publish crater-osx-arm64
 
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2
