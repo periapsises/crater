@@ -13,8 +13,8 @@ public static class Crater
     {
         const string source = """
                               hello: number = 5
-                              world: hello
-                              local hello: hi
+                              world: number = "Hi"
+                              local hello: string = "Hello"
 
                               do
                                   local hi: what

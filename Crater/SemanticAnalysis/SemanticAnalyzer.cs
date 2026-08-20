@@ -15,6 +15,7 @@ public class SemanticAnalyzer
     private readonly Dictionary<string, Type> _types;
 
     private static readonly Type NumberType = new NumberType();
+    private static readonly Type StringType = new StringType();
     private static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
@@ -23,7 +24,8 @@ public class SemanticAnalyzer
 
         _types = new Dictionary<string, Type>()
         {
-            { "number", NumberType }
+            { "number", NumberType },
+            { "string", StringType }
         };
 
         _global = new Environment();
@@ -78,7 +80,7 @@ public class SemanticAnalyzer
             var initializerType = AnalyzeExpression(variableDeclaration.initializer);
             if (!type.CanHold(initializerType))
                 // TODO: Proper error codes
-                _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
         }
         else
         {
@@ -111,6 +113,7 @@ public class SemanticAnalyzer
         return literal.kind switch
         {
             LiteralKind.Number => NumberType,
+            LiteralKind.String => StringType,
             _ => throw new SwitchExpressionException(literal.kind)
         };
     }
