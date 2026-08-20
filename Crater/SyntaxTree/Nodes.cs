@@ -6,9 +6,11 @@ public sealed record Program(Block block, Source source) : Node(source);
 
 public sealed record Block(List<Node> statements, Source source) : Node(source);
 
-public sealed record VariableDeclaration(bool local, string name, string type, Expression? initializer, Source source) : Node(source);
+public sealed record VariableDeclaration(bool local, string name, TypeName type, Expression? initializer, Source source) : Node(source);
 
 public sealed record DoStatement(Block block, Source source) : Node(source);
+
+public sealed record TypeName(string name, bool nullable, Source source) : Node(source);
 
 public abstract record Expression(Source source) : Node(source);
 

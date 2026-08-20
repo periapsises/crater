@@ -34,7 +34,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
     {
         var local = context.LOCAL() != null;
         var name = context.name.Text;
-        var type = context.type.Text;
+        var type = Get<TypeName>(context.typeName());
 
         Expression? initializer = null;
         if (context.expression() != null)
@@ -47,6 +47,14 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
     {
         var block = Get<Block>(context.block());
         return new DoStatement(block, Source.FromContext(context));
+    }
+
+    public override Node VisitTypeName(CraterParser.TypeNameContext context)
+    {
+        var name = context.IDENTIFIER().GetText();
+        var nullable = context.QMARK() != null;
+
+        return new TypeName(name, nullable, Source.FromContext(context));
     }
 
     public override Node VisitNumberLiteral(CraterParser.NumberLiteralContext context)

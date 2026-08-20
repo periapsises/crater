@@ -23,6 +23,8 @@ public static class Crater
                               end
 
                               local a: number = nil
+                              local b: number? = nil
+                              local c: number? = 5
                               """;
 
         var inputStream = new AntlrInputStream(source)

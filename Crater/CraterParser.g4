@@ -11,9 +11,11 @@ statement
     | doStatement
     ;
 
-variableDeclaration: LOCAL? name=IDENTIFIER COLON type=IDENTIFIER (ASSIGN expression)?;
+variableDeclaration: LOCAL? name=IDENTIFIER COLON typeName (ASSIGN expression)?;
 
 doStatement: DO block END;
+
+typeName: IDENTIFIER QMARK?;
 
 expression: literal;
 

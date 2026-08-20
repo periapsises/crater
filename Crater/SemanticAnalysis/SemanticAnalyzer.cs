@@ -70,13 +70,16 @@ public class SemanticAnalyzer
             // TODO: Proper error codes
             _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
 
-        var type = _types.GetValueOrDefault(variableDeclaration.type);
+        var type = _types.GetValueOrDefault(variableDeclaration.type.name);
         if (type == null)
         {
             // TODO: Proper error codes
             _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
             type = UnknownType;
         }
+
+        if (variableDeclaration.type.nullable)
+            type = new NullableType(type);
 
         if (variableDeclaration.initializer is not null)
         {
