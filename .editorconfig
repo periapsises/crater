@@ -1,0 +1,12 @@
+root = true
+
+[*]
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+max_line_length = off
+
+resharper_wrap_lines = false
+resharper_csharp_wrap_lines = false
