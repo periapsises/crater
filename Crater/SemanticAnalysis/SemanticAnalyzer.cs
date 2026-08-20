@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Crater.Diagnostics;
+using Crater.SemanticAnalysis.Types;
 using Crater.SyntaxTree;
 
 namespace Crater.SemanticAnalysis;
@@ -10,6 +11,10 @@ public class SemanticAnalyzer
     
     private readonly Environment _global;
     private Environment _local;
+
+    private readonly Dictionary<string, Type> _types = [];
+
+    private static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
@@ -53,8 +58,13 @@ public class SemanticAnalyzer
         if (env.GetType(variableDeclaration.name) != null)
             // TODO: Proper error codes
             _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
-
-        env.Define(variableDeclaration.name, variableDeclaration.type);
+        
+        if (_types.TryGetValue(variableDeclaration.type, out var type))
+            env.Define(variableDeclaration.name, type);
+        
+        // TODO: Proper error codes
+        _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+        env.Define(variableDeclaration.name, UnknownType);
     }
 
     private void AnalyzeDoStatement(DoStatement doStatement)
