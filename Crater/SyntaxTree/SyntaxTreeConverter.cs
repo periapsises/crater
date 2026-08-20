@@ -13,7 +13,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
 
         throw new Exception($"Could not convert node to {typeof(T).Name} (was {node.GetType().Name})");
     }
-    
+
     public override Node VisitProgram(CraterParser.ProgramContext context)
     {
         var block = Get<Block>(context.block());
@@ -23,7 +23,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
     public override Node VisitBlock(CraterParser.BlockContext context)
     {
         var nodes = new List<Node>();
-        
+
         foreach (var variableDeclaration in context.statement())
             nodes.Add(Visit(variableDeclaration));
 
@@ -42,7 +42,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
 
         return new VariableDeclaration(local, name, type, initializer, Source.FromContext(context));
     }
-    
+
     public override Node VisitDoStatement(CraterParser.DoStatementContext context)
     {
         var block = Get<Block>(context.block());

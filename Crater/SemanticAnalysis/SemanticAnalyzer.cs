@@ -8,7 +8,7 @@ namespace Crater.SemanticAnalysis;
 public class SemanticAnalyzer
 {
     private readonly IDiagnosticReporter _reporter;
-    
+
     private readonly Environment _global;
     private Environment _local;
 
@@ -19,7 +19,7 @@ public class SemanticAnalyzer
     public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
         _reporter = reporter;
-        
+
         _global = new Environment();
         _local = new Environment(_global);
     }
@@ -27,7 +27,7 @@ public class SemanticAnalyzer
     private void EnterScope() => _local = new Environment(_local);
 
     private void ExitScope() => _local = _local.Parent ?? throw new NullReferenceException("Cannot exit global scope");
-    
+
     public void AnalyzeProgram(Program program)
     {
         AnalyzeBlock(program.block);
@@ -54,14 +54,14 @@ public class SemanticAnalyzer
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
         var env = variableDeclaration.local ? _global : _local;
-        
+
         if (env.GetType(variableDeclaration.name) != null)
             // TODO: Proper error codes
             _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
-        
+
         if (_types.TryGetValue(variableDeclaration.type, out var type))
             env.Define(variableDeclaration.name, type);
-        
+
         // TODO: Proper error codes
         _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
         env.Define(variableDeclaration.name, UnknownType);

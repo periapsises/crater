@@ -15,18 +15,18 @@ public static class Crater
                               hello: world
                               world: hello
                               local hello: hi
-                              
+
                               do
                                   local hi: what
                                   local hello: sup
                               end
                               """;
-        
+
         var inputStream = new AntlrInputStream(source)
         {
             name = "Unknown"
         };
-        
+
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
@@ -38,7 +38,7 @@ public static class Crater
             throw new Exception("Failed to convert resulting tree.");
 
         var reporter = new DiagnosticBag();
-        
+
         var semanticAnalyzer = new SemanticAnalyzer(reporter);
         semanticAnalyzer.AnalyzeProgram(program);
 
@@ -47,7 +47,7 @@ public static class Crater
 
         if (reporter.hasErrors)
             return;
-        
+
         var output = Compiler.Compile(program);
         Console.WriteLine(output);
     }

@@ -19,12 +19,12 @@ public class LuaWriter
         _builder.Append(' ', _indent * 4);
         _needsIndent = false;
     }
-    
+
     public void Write(string text)
     {
         if (string.IsNullOrEmpty(text))
             return;
-        
+
         ApplyIndent();
         _builder.Append(text);
     }

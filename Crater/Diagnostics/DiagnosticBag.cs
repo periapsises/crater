@@ -9,7 +9,7 @@ public class DiagnosticBag : IDiagnosticReporter, IEnumerable<Diagnostic>
     public bool hasErrors => _diagnostics.Any(diagnostic => diagnostic.severity is DiagnosticSeverity.Error or DiagnosticSeverity.Fatal);
 
     public IReadOnlyList<Diagnostic> diagnostics => _diagnostics;
-    
+
     public void Report(Diagnostic diagnostic)
     {
         _diagnostics.Add(diagnostic);

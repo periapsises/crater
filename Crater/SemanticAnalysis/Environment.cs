@@ -10,7 +10,7 @@ public class Environment(Environment? parent = null)
     {
         _symbolTypes[name] = type;
     }
-    
+
     public Type? GetType(string name)
     {
         if (_symbolTypes.TryGetValue(name, out var type))

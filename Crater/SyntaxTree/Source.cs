@@ -20,7 +20,7 @@ public class Source(int startLine, int startColumn, int stopLine, int stopColumn
 
         return new Source(startLine, startColumn, startLine, stopColumn, token.TokenSource.SourceName);
     }
-    
+
     public static Source FromContext(ParserRuleContext context)
     {
         return new Source(context.Start.Line, context.Start.Column, context.Stop.Line, context.Stop.Column, context.Start.TokenSource.SourceName);

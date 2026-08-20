@@ -6,7 +6,7 @@ namespace Crater.Compilation;
 public class Compiler
 {
     private readonly LuaWriter _writer;
-    
+
     private Compiler()
     {
         _writer = new LuaWriter();
@@ -47,7 +47,7 @@ public class Compiler
     {
         if (variableDeclaration.local)
             _writer.Write("local ");
-            
+
         _writer.WriteLine(variableDeclaration.name);
     }
 
