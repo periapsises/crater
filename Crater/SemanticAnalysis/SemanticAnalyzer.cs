@@ -16,6 +16,7 @@ public class SemanticAnalyzer
 
     private static readonly Type NumberType = new NumberType();
     private static readonly Type StringType = new StringType();
+    private static readonly Type BooleanType = new BooleanType();
     private static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
@@ -25,7 +26,8 @@ public class SemanticAnalyzer
         _types = new Dictionary<string, Type>()
         {
             { "number", NumberType },
-            { "string", StringType }
+            { "string", StringType },
+            { "bool", BooleanType }
         };
 
         _global = new Environment();
@@ -114,6 +116,7 @@ public class SemanticAnalyzer
         {
             LiteralKind.Number => NumberType,
             LiteralKind.String => StringType,
+            LiteralKind.Boolean => BooleanType,
             _ => throw new SwitchExpressionException(literal.kind)
         };
     }

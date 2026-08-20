@@ -17,8 +17,9 @@ public static class Crater
                               local hello: string = "Hello"
 
                               do
-                                  local hi: what
-                                  local hello: sup
+                                  local hi: bool = true
+                                  local hello: bool = false
+                                  local sup: bool = 5
                               end
                               """;
 
