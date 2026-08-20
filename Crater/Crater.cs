@@ -28,6 +28,8 @@ public static class Crater
 
                               local d: number
                               local e: number?
+
+                              MyGlobalNumber: number
                               """;
 
         var inputStream = new AntlrInputStream(source)
