@@ -98,9 +98,8 @@ public class SemanticAnalyzer
                 }
             }
         }
-        else
+        else if (type is not NullableType)
         {
-            // TODO: Verify type is nullable if there is no initializer
             // TODO: Proper error  codes
             _reporter.Report(new Diagnostic("0", $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
         }
