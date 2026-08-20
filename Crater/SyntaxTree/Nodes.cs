@@ -10,6 +10,8 @@ public sealed record VariableDeclaration(bool local, string name, TypeName type,
 
 public sealed record DoStatement(Block block, Source source) : Node(source);
 
+public sealed record Assignment(string variable, Expression value, Source source) : Node(source);
+
 public sealed record TypeName(string name, bool nullable, Source source) : Node(source);
 
 public abstract record Expression(Source source) : Node(source);

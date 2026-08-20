@@ -49,6 +49,14 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new DoStatement(block, Source.FromContext(context));
     }
 
+    public override Node VisitAssignment(CraterParser.AssignmentContext context)
+    {
+        var variable = context.IDENTIFIER().GetText();
+        var value = Get<Expression>(context.expression());
+
+        return new Assignment(variable, value, Source.FromContext(context));
+    }
+
     public override Node VisitTypeName(CraterParser.TypeNameContext context)
     {
         var name = context.IDENTIFIER().GetText();

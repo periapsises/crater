@@ -56,6 +56,9 @@ public class SemanticAnalyzer
                 case DoStatement doStatement:
                     AnalyzeDoStatement(doStatement);
                     break;
+                case Assignment assignment:
+                    AnalyzeAssignment(assignment);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -117,6 +120,24 @@ public class SemanticAnalyzer
         EnterScope();
         AnalyzeBlock(doStatement.block);
         ExitScope();
+    }
+
+    private void AnalyzeAssignment(Assignment assignment)
+    {
+        var variableType = _local.GetType(assignment.variable);
+        if (variableType == null)
+        {
+            // TODO: Proper error codes
+            _reporter.Report(new Diagnostic("0", $"Variable '{assignment.variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
+            return;
+        }
+
+        var valueType = AnalyzeExpression(assignment.value);
+        if (variableType.CanHold(valueType))
+            return;
+
+        // TODO: Proper error codes
+        _reporter.Report(new Diagnostic("0", $"Cannot assign value of type '{valueType.Name}' to variable of type '{variableType.Name}'", DiagnosticSeverity.Error, assignment.source));
     }
 
     private Type AnalyzeExpression(Expression expression)

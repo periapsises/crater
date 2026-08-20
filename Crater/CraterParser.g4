@@ -9,11 +9,14 @@ block: statement*;
 statement
     : variableDeclaration
     | doStatement
+    | assignment
     ;
 
 variableDeclaration: LOCAL? name=IDENTIFIER COLON typeName (ASSIGN expression)?;
 
 doStatement: DO block END;
+
+assignment: IDENTIFIER ASSIGN expression;
 
 typeName: IDENTIFIER QMARK?;
 
