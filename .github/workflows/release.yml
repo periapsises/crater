@@ -1,0 +1,61 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*.*.*"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Setup Java JDK
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '21'
+                  distribution: 'temurin'
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '9.0.x'
+
+            - name: Install Build Utilities
+              run: sudo apt-get update && sudo apt-get install -y zip
+
+            - name: Download ANTLR Jar
+              run: |
+                  curl -sSL https://www.antlr.org/download/antlr-4.13.2-complete.jar -o antlr-4.13.2-complete.jar
+
+            - name: Generate ANTLR Code
+              run: |
+                  java -jar antlr-4.13.2-complete.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
+
+            - name: Publish & Package Windows Executable
+              run: |
+                  dotnet publish -c Release -r win-x64 -p:AssemblyName=crater-win64
+                  zip -j crater-win64.zip bin/Release/net9.0/win-x64/publish/crater-win64.exe
+
+            - name: Publish & Package Linux Executable
+              run: |
+                  dotnet publish -c Release -r linux-x64 -p:AssemblyName=crater-linux64
+                  tar -czvf crater-linux64.tar.gz -C bin/Release/net9.0/linux-x64/publish crater-linux64
+
+            - name: Publish & Package macOS Executable
+              run: |
+                  dotnet publish -c Release -r osx-arm64 -p:AssemblyName=crater-osx-arm64
+                  tar -czvf crater-osx-arm64.tar.gz -C bin/Release/net9.0/osx-arm64/publish crater-osx-arm64
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: |
+                      crater-win64.zip
+                      crater-linux64.tar.gz
+                      crater-osx-arm64.tar.gz
