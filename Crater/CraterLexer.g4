@@ -21,6 +21,8 @@ fragment EscapeSequence
 
 BOOLEAN: 'true' | 'false';
 
+NIL: 'nil';
+
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 
 COLON: ':';
