@@ -17,6 +17,7 @@ public class SemanticAnalyzer
     private static readonly Type NumberType = new NumberType();
     private static readonly Type StringType = new StringType();
     private static readonly Type BooleanType = new BooleanType();
+    private static readonly Type NilType = new NilType();
     private static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
@@ -81,8 +82,18 @@ public class SemanticAnalyzer
         {
             var initializerType = AnalyzeExpression(variableDeclaration.initializer);
             if (!type.CanHold(initializerType))
-                // TODO: Proper error codes
-                _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+            {
+                if (initializerType is NilType)
+                {
+                    // TODO: Proper error codes
+                    _reporter.Report(new Diagnostic("0", $"Cannot assign nil to '{variableDeclaration.name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                }
+                else
+                {
+                    // TODO: Proper error codes
+                    _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                }
+            }
         }
         else
         {
@@ -117,6 +128,7 @@ public class SemanticAnalyzer
             LiteralKind.Number => NumberType,
             LiteralKind.String => StringType,
             LiteralKind.Boolean => BooleanType,
+            LiteralKind.Nil => NilType,
             _ => throw new SwitchExpressionException(literal.kind)
         };
     }
