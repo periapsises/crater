@@ -12,13 +12,19 @@ public class SemanticAnalyzer
     private readonly Environment _global;
     private Environment _local;
 
-    private readonly Dictionary<string, Type> _types = [];
+    private readonly Dictionary<string, Type> _types;
 
+    private static readonly Type NumberType = new NumberType();
     private static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
         _reporter = reporter;
+
+        _types = new Dictionary<string, Type>()
+        {
+            { "number", NumberType }
+        };
 
         _global = new Environment();
         _local = new Environment(_global);
@@ -59,12 +65,29 @@ public class SemanticAnalyzer
             // TODO: Proper error codes
             _reporter.Report(new Diagnostic("0", $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
 
-        if (_types.TryGetValue(variableDeclaration.type, out var type))
-            env.Define(variableDeclaration.name, type);
+        var type = _types.GetValueOrDefault(variableDeclaration.type);
+        if (type == null)
+        {
+            // TODO: Proper error codes
+            _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+            type = UnknownType;
+        }
 
-        // TODO: Proper error codes
-        _reporter.Report(new Diagnostic("0", $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
-        env.Define(variableDeclaration.name, UnknownType);
+        if (variableDeclaration.initializer is not null)
+        {
+            var initializerType = AnalyzeExpression(variableDeclaration.initializer);
+            if (!type.CanHold(initializerType))
+                // TODO: Proper error codes
+                _reporter.Report(new Diagnostic("0", $"The value assigned to '{variableDeclaration.name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+        }
+        else
+        {
+            // TODO: Verify type is nullable if there is no initializer
+            // TODO: Proper error  codes
+            _reporter.Report(new Diagnostic("0", $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
+        }
+
+        env.Define(variableDeclaration.name, type);
     }
 
     private void AnalyzeDoStatement(DoStatement doStatement)
@@ -72,5 +95,23 @@ public class SemanticAnalyzer
         EnterScope();
         AnalyzeBlock(doStatement.block);
         ExitScope();
+    }
+
+    private Type AnalyzeExpression(Expression expression)
+    {
+        return expression switch
+        {
+            Literal literal => AnalyzeLiteral(literal),
+            _ => throw new SwitchExpressionException(expression)
+        };
+    }
+
+    private Type AnalyzeLiteral(Literal literal)
+    {
+        return literal.kind switch
+        {
+            LiteralKind.Number => NumberType,
+            _ => throw new SwitchExpressionException(literal.kind)
+        };
     }
 }

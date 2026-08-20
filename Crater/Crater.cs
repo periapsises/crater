@@ -12,7 +12,7 @@ public static class Crater
     public static void Main(string[] args)
     {
         const string source = """
-                              hello: world
+                              hello: number = 5
                               world: hello
                               local hello: hi
 
