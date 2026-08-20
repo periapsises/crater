@@ -26,5 +26,6 @@ NIL: 'nil';
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 
 COLON: ':';
+ASSIGN: '=';
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);

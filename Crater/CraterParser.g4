@@ -11,7 +11,7 @@ statement
     | doStatement
     ;
 
-variableDeclaration: LOCAL? name=IDENTIFIER COLON type=IDENTIFIER;
+variableDeclaration: LOCAL? name=IDENTIFIER COLON type=IDENTIFIER (ASSIGN expression);
 
 doStatement: DO block END;
 

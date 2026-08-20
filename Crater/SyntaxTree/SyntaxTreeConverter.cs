@@ -36,12 +36,36 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         var name = context.name.Text;
         var type = context.type.Text;
 
-        return new VariableDeclaration(local, name, type, Source.FromContext(context));
+        Expression? initializer = null;
+        if (context.expression() != null)
+            initializer = Get<Expression>(context.expression());
+
+        return new VariableDeclaration(local, name, type, initializer, Source.FromContext(context));
     }
     
     public override Node VisitDoStatement(CraterParser.DoStatementContext context)
     {
         var block = Get<Block>(context.block());
         return new DoStatement(block, Source.FromContext(context));
+    }
+
+    public override Node VisitNumberLiteral(CraterParser.NumberLiteralContext context)
+    {
+        return new Literal(context.GetText(), LiteralKind.Number, Source.FromContext(context));
+    }
+
+    public override Node VisitStringLiteral(CraterParser.StringLiteralContext context)
+    {
+        return new Literal(context.GetText(), LiteralKind.String, Source.FromContext(context));
+    }
+
+    public override Node VisitBooleanLiteral(CraterParser.BooleanLiteralContext context)
+    {
+        return new Literal(context.GetText(), LiteralKind.Boolean, Source.FromContext(context));
+    }
+
+    public override Node VisitNilLiteral(CraterParser.NilLiteralContext context)
+    {
+        return new Literal(context.GetText(), LiteralKind.Nil, Source.FromContext(context));
     }
 }
