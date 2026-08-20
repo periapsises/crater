@@ -103,13 +103,16 @@ public class SemanticAnalyzer
         }
         else
         {
-            if (type is not NullableType)
-                // TODO: Proper error  codes
-                _reporter.Report(new Diagnostic("0", $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
-
             if (!variableDeclaration.local)
+            {
                 // TODO: Proper error codes
                 _reporter.Report(new Diagnostic("0", $"Global variable '{variableDeclaration.name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
+            }
+            else if (type is not NullableType)
+            {
+                // TODO: Proper error  codes
+                _reporter.Report(new Diagnostic("0", $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
+            }
         }
 
         env.Define(variableDeclaration.name, type);
