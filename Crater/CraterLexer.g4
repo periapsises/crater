@@ -19,6 +19,8 @@ fragment EscapeSequence
     | '\\u{' [a-fA-F0-9]+ '}'
     ;
 
+BOOLEAN: 'true' | 'false';
+
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 
 COLON: ':';
