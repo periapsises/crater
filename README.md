@@ -8,7 +8,7 @@ To generate the lexer and parser from the grammar files, you'll need the antlr4 
 Make sure the target language is `CSharp` and that the output directory is under `Crater/Antlr`.  
 The listener is can be omited (`-no-listener`) but the visitor is required.
 
-Here is what those commands should look like:
+Here is what that command should look like:
 
 ```bash
 java -jar antlr4.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
