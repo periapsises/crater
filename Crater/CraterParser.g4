@@ -33,9 +33,11 @@ expressionList: expression (COMMA expression)*;
 
 expression
     : IDENTIFIER                                                # VariableReference
-    | op=MINUS expression                                       # UnaryExpression
+    | op=(MINUS | NOT) expression                               # UnaryExpression
     | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
+    | left=expression AND right=expression                      # AndOperation
+    | left=expression OR right=expression                       # OrOperation
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
     | (TRUE | FALSE)                                            # BooleanLiteral

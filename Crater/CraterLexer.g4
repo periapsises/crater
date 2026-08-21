@@ -15,6 +15,11 @@ END     : 'end';
 // Declarations & Scoping
 LOCAL   : 'local';
 
+// Logical Operators
+AND     : 'and';
+OR      : 'or';
+NOT     : 'not';
+
 // Literal Keywords
 TRUE    : 'true';
 FALSE   : 'false';

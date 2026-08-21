@@ -45,6 +45,25 @@ public static class Crater
                               else
                                   NewGlobal: number = 10 + a
                               end
+
+                              local myNullable: number?
+                              local myNonNullable: number = 5
+
+                              local myInvalidNot: number = not myNullable
+                              local myValidNot: bool = not nil
+
+                              local myInvalidOr: number = myNullable or myNullable
+                              local myValidOr: number = myNullable or myNonNullable
+
+                              local myInvalidAnd: number = myNullable and myNonNullable
+                              local myOtherInvalidAnd: number = myNonNullable and myNullable
+                              local myValidAnd: number = myNonNullable and myNonNullable
+
+                              local myInvalidAndOr: number = myNullable and myNullable or myNullable
+                              local myOtherInvalidAndOr: number = myNullable and myNonNullable or myNullable
+                              local myThirdInvalidAndOr: number = myNonNullable and myNullable or myNullable
+                              local myValidAndOr: number = myNullable and myNonNullable or myNonNullable
+                              local myOtherValidAndOr: number = myNullable and myNullable or myNonNullable
                               """;
 
         var inputStream = new AntlrInputStream(source)
