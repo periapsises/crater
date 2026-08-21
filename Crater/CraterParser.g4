@@ -32,7 +32,8 @@ typeName: IDENTIFIER QMARK?;
 expressionList: expression (COMMA expression)*;
 
 expression
-    : op=MINUS expression                                       # UnaryExpression
+    : IDENTIFIER                                                # VariableReference
+    | op=MINUS expression                                       # UnaryExpression
     | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
     | NUMBER                                                    # NumberLiteral

@@ -116,6 +116,12 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return expressions;
     }
 
+    public override object VisitVariableReference(CraterParser.VariableReferenceContext context)
+    {
+        var name = context.IDENTIFIER().GetText();
+        return new VariableReference(name, Source.FromContext(context));
+    }
+
     public override object VisitUnaryExpression(CraterParser.UnaryExpressionContext context)
     {
         var op = context.op.Text;

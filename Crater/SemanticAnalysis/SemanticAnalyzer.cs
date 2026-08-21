@@ -178,11 +178,22 @@ public class SemanticAnalyzer
     {
         return expression switch
         {
-            Literal literal => AnalyzeLiteral(literal),
+            VariableReference variableReference => AnalyzeVariableReference(variableReference),
             UnaryOperation unaryOperation => AnalyzeUnaryOperation(unaryOperation),
             BinaryOperation binaryOperation => AnalyzeBinaryOperation(binaryOperation),
+            Literal literal => AnalyzeLiteral(literal),
             _ => throw new SwitchExpressionException(expression)
         };
+    }
+
+    private Type AnalyzeVariableReference(VariableReference variableReference)
+    {
+        var type = _local.GetType(variableReference.name);
+        if (type != null)
+            return type;
+
+        _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variableReference.name}' does not exist in the current context", DiagnosticSeverity.Error, variableReference.source));
+        return UnknownType;
     }
 
     private Type AnalyzeUnaryOperation(UnaryOperation unaryOperation)
