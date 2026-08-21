@@ -21,7 +21,8 @@ assignment: IDENTIFIER ASSIGN expression;
 typeName: IDENTIFIER QMARK?;
 
 expression
-    : left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
+    : op=MINUS expression                                       # UnaryExpression
+    | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral

@@ -133,9 +133,21 @@ public class SemanticAnalyzer
         return expression switch
         {
             Literal literal => AnalyzeLiteral(literal),
+            UnaryOperation unaryOperation => AnalyzeUnaryOperation(unaryOperation),
             BinaryOperation binaryOperation => AnalyzeBinaryOperation(binaryOperation),
             _ => throw new SwitchExpressionException(expression)
         };
+    }
+
+    private Type AnalyzeUnaryOperation(UnaryOperation unaryOperation)
+    {
+        var expressionType = AnalyzeExpression(unaryOperation.expression);
+        var resultType = expressionType.ResolveUnaryOperation(unaryOperation.op);
+        if (resultType != null)
+            return resultType;
+
+        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedUnaryOperation, $"Cannot perform unary operation '{unaryOperation.op}' on type '{expressionType.Name}'", DiagnosticSeverity.Error, unaryOperation.source));
+        return UnknownType;
     }
 
     private Type AnalyzeBinaryOperation(BinaryOperation binaryOperation)

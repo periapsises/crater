@@ -33,6 +33,7 @@ public static class Crater
 
                               hello = "A string"
                               a = 5 + 7
+                              b = -4
                               """;
 
         var inputStream = new AntlrInputStream(source)

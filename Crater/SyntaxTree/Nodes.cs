@@ -18,6 +18,8 @@ public abstract record Expression(Source source) : Node(source);
 
 public sealed record BinaryOperation(Expression left, string op, Expression right, Source source) : Expression(source);
 
+public sealed record UnaryOperation(string op, Expression expression, Source source) : Expression(source);
+
 public enum LiteralKind
 {
     Number,
