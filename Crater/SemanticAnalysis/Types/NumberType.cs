@@ -12,14 +12,8 @@ public class NumberType(bool nullable = false) : Type("number", null, nullable)
 
     public override Type? ResolveBinaryOperation(string op, Type other)
     {
-        if (other is NumberType)
-        {
-            return op switch
-            {
-                "+" or "-" or "*" or "/" => this,
-                _ => null
-            };
-        }
+        if (other is NumberType && op is "+" or "-" or "*" or "/")
+            return this;
 
         return base.ResolveBinaryOperation(op, other);
     }
