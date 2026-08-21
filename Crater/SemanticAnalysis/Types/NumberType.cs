@@ -1,6 +1,6 @@
 namespace Crater.SemanticAnalysis.Types;
 
-public class NumberType() : Type("number")
+public class NumberType(bool nullable = false) : Type("number", null, nullable)
 {
     public override Type? ResolveUnaryOperation(string op)
     {
@@ -23,4 +23,7 @@ public class NumberType() : Type("number")
 
         return base.ResolveBinaryOperation(op, other);
     }
+
+    public override Type GetNullable() => new NumberType(true);
+    public override Type GetNonNullable() => new NumberType();
 }

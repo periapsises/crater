@@ -15,11 +15,11 @@ public class SemanticAnalyzer
 
     private readonly Dictionary<string, Type> _types;
 
-    private static readonly Type NumberType = new NumberType();
-    private static readonly Type StringType = new StringType();
-    private static readonly Type BooleanType = new BooleanType();
-    private static readonly Type NilType = new NilType();
-    private static readonly Type UnknownType = new UnknownType();
+    public static readonly Type NumberType = new NumberType();
+    public static readonly Type StringType = new StringType();
+    public static readonly Type BooleanType = new BooleanType();
+    public static readonly Type NilType = new NilType();
+    public static readonly Type UnknownType = new UnknownType();
 
     public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
@@ -93,7 +93,7 @@ public class SemanticAnalyzer
             {
                 if (!variableDeclaration.local)
                     _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"Global variable '{name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
-                else if (type is not NullableType)
+                else if (!type.Nullable)
                     _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"The variable '{name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
             }
 
@@ -115,7 +115,7 @@ public class SemanticAnalyzer
         }
 
         if (variableDeclarator.type.nullable)
-            type = new NullableType(type);
+            type = type.GetNullable();
 
         return (name, type);
     }
