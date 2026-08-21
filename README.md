@@ -11,17 +11,12 @@ The listener is can be omited (`-no-listener`) but the visitor is required.
 Here is what those commands should look like:
 
 ```
-java -jar antlr4.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4
-java -jar antlr4.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterParser.g4
+java -jar antlr4.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
 ```
 
-After running this you should see the following under `Crater/Antlr`:  
-- CraterLexer.cs
-- CraterLexer.interp
-- CraterLexer.tokens
-- CraterParser.cs
-- CraterParser.interp
-- CraterParser.tokens
+After running this you should see the following under `Crater/Antlr`:
+- CraterLexer (`.cs`,`.interp`,`.tokens`)
+- CraterParser (`.cs`,`.interp`,`.tokens`)
 - CraterParserBaseVisitor.cs
 - CraterParserVisitor.cs
 
