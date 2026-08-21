@@ -48,7 +48,8 @@ public class Compiler
         if (variableDeclaration.local)
             _writer.Write("local ");
 
-        _writer.WriteLine(variableDeclaration.name);
+        foreach (var declarator in variableDeclaration.declarators)
+            _writer.WriteLine(declarator.name);
     }
 
     private void CompileDoStatement(DoStatement doStatement)

@@ -3,7 +3,7 @@ using Crater.Antlr;
 
 namespace Crater.SyntaxTree;
 
-public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
+public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
 {
     private T Get<T>(ParserRuleContext context)
     {
@@ -14,42 +14,54 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         throw new Exception($"Could not convert node to {typeof(T).Name} (was {node.GetType().Name})");
     }
 
-    public override Node VisitProgram(CraterParser.ProgramContext context)
+    public override object VisitProgram(CraterParser.ProgramContext context)
     {
         var block = Get<Block>(context.block());
         return new Program(block, Source.FromContext(context));
     }
 
-    public override Node VisitBlock(CraterParser.BlockContext context)
+    public override object VisitBlock(CraterParser.BlockContext context)
     {
         var nodes = new List<Node>();
 
         foreach (var variableDeclaration in context.statement())
-            nodes.Add(Visit(variableDeclaration));
+            nodes.Add(Get<Node>(variableDeclaration));
 
         return new Block(nodes, Source.FromContext(context));
     }
 
-    public override Node VisitVariableDeclaration(CraterParser.VariableDeclarationContext context)
+    public override object VisitVariableDeclaration(CraterParser.VariableDeclarationContext context)
     {
         var local = context.LOCAL() != null;
+        List<VariableDeclarator> declarators = [];
+        List<Expression> initializers;
+
+        foreach (var variableDeclaratorContext in context.variableDeclarator())
+            declarators.Add(Get<VariableDeclarator>(variableDeclaratorContext));
+
+        if (context.expressionList() != null)
+            initializers = Get<List<Expression>>(context.expressionList());
+        else
+            initializers = [];
+
+        return new VariableDeclaration(local, declarators, initializers, Source.FromContext(context));
+    }
+
+    public override object VisitVariableDeclarator(CraterParser.VariableDeclaratorContext context)
+    {
         var name = context.name.Text;
         var type = Get<TypeName>(context.typeName());
 
-        Expression? initializer = null;
-        if (context.expression() != null)
-            initializer = Get<Expression>(context.expression());
-
-        return new VariableDeclaration(local, name, type, initializer, Source.FromContext(context));
+        return new VariableDeclarator(name, type, Source.FromContext(context));
     }
 
-    public override Node VisitDoStatement(CraterParser.DoStatementContext context)
+    public override object VisitDoStatement(CraterParser.DoStatementContext context)
     {
         var block = Get<Block>(context.block());
         return new DoStatement(block, Source.FromContext(context));
     }
 
-    public override Node VisitAssignment(CraterParser.AssignmentContext context)
+    public override object VisitAssignment(CraterParser.AssignmentContext context)
     {
         var variable = context.IDENTIFIER().GetText();
         var value = Get<Expression>(context.expression());
@@ -57,7 +69,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new Assignment(variable, value, Source.FromContext(context));
     }
 
-    public override Node VisitTypeName(CraterParser.TypeNameContext context)
+    public override object VisitTypeName(CraterParser.TypeNameContext context)
     {
         var name = context.IDENTIFIER().GetText();
         var nullable = context.QMARK() != null;
@@ -65,7 +77,16 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new TypeName(name, nullable, Source.FromContext(context));
     }
 
-    public override Node VisitUnaryExpression(CraterParser.UnaryExpressionContext context)
+    public override object VisitExpressionList(CraterParser.ExpressionListContext context)
+    {
+        var expressions = new List<Expression>();
+        foreach (var expressionContext in context.expression())
+            expressions.Add(Get<Expression>(expressionContext));
+
+        return expressions;
+    }
+
+    public override object VisitUnaryExpression(CraterParser.UnaryExpressionContext context)
     {
         var op = context.op.Text;
         var expression = Get<Expression>(context.expression());
@@ -73,7 +94,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new UnaryOperation(op, expression, Source.FromContext(context));
     }
 
-    public override Node VisitMultiplicativeOperation(CraterParser.MultiplicativeOperationContext context)
+    public override object VisitMultiplicativeOperation(CraterParser.MultiplicativeOperationContext context)
     {
         var left = Get<Expression>(context.left);
         var right = Get<Expression>(context.right);
@@ -82,7 +103,7 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new BinaryOperation(left, op, right, Source.FromContext(context));
     }
 
-    public override Node VisitAdditiveOperation(CraterParser.AdditiveOperationContext context)
+    public override object VisitAdditiveOperation(CraterParser.AdditiveOperationContext context)
     {
         var left = Get<Expression>(context.left);
         var right = Get<Expression>(context.right);
@@ -91,22 +112,22 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new BinaryOperation(left, op, right, Source.FromContext(context));
     }
 
-    public override Node VisitNumberLiteral(CraterParser.NumberLiteralContext context)
+    public override object VisitNumberLiteral(CraterParser.NumberLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.Number, Source.FromContext(context));
     }
 
-    public override Node VisitStringLiteral(CraterParser.StringLiteralContext context)
+    public override object VisitStringLiteral(CraterParser.StringLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.String, Source.FromContext(context));
     }
 
-    public override Node VisitBooleanLiteral(CraterParser.BooleanLiteralContext context)
+    public override object VisitBooleanLiteral(CraterParser.BooleanLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.Boolean, Source.FromContext(context));
     }
 
-    public override Node VisitNilLiteral(CraterParser.NilLiteralContext context)
+    public override object VisitNilLiteral(CraterParser.NilLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.Nil, Source.FromContext(context));
     }

@@ -6,13 +6,22 @@ public sealed record Program(Block block, Source source) : Node(source);
 
 public sealed record Block(List<Node> statements, Source source) : Node(source);
 
-public sealed record VariableDeclaration(bool local, string name, TypeName type, Expression? initializer, Source source) : Node(source);
+public sealed record VariableDeclaration(bool local, List<VariableDeclarator> declarators, List<Expression> initializers, Source source) : Node(source);
+
+public sealed record VariableDeclarator(string name, TypeName type, Source source) : Node(source);
 
 public sealed record DoStatement(Block block, Source source) : Node(source);
 
 public sealed record Assignment(string variable, Expression value, Source source) : Node(source);
 
-public sealed record TypeName(string name, bool nullable, Source source) : Node(source);
+public sealed record TypeName(string name, bool nullable, Source source) : Node(source)
+{
+    public override string ToString()
+    {
+        if (nullable) return name + "?";
+        return name;
+    }
+}
 
 public abstract record Expression(Source source) : Node(source);
 

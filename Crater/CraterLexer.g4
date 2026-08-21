@@ -32,5 +32,6 @@ PLUS: '+';
 MINUS: '-';
 STAR: '*';
 SLASH: '/';
+COMMA: ',';
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);

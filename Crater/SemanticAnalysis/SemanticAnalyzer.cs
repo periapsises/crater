@@ -70,39 +70,51 @@ public class SemanticAnalyzer
     {
         var env = variableDeclaration.local ? _global : _local;
 
-        if (env.GetType(variableDeclaration.name) != null)
-            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable {variableDeclaration.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclaration.source));
+        for (var i = 0; i < variableDeclaration.declarators.Count; i++)
+        {
+            var (name, type) = AnalyzeVariableDeclarator(env, variableDeclaration.declarators[i]);
+            var initializer = variableDeclaration.initializers.ElementAtOrDefault(i);
 
-        var type = _types.GetValueOrDefault(variableDeclaration.type.name);
+            if (initializer is not null)
+            {
+                var initializerType = AnalyzeExpression(initializer);
+                if (!type.CanHold(initializerType))
+                {
+                    if (initializerType is NilType)
+                        _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                    else
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                }
+            }
+            else
+            {
+                if (!variableDeclaration.local)
+                    _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"Global variable '{name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
+                else if (type is not NullableType)
+                    _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"The variable '{name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
+            }
+
+            env.Define(name, type);
+        }
+    }
+
+    private (string, Type) AnalyzeVariableDeclarator(Environment env, VariableDeclarator variableDeclarator)
+    {
+        if (env.GetType(variableDeclarator.name) != null)
+            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable {variableDeclarator.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclarator.source));
+
+        var name = variableDeclarator.name;
+        var type = _types.GetValueOrDefault(variableDeclarator.type.name);
         if (type == null)
         {
-            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{variableDeclaration.type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{variableDeclarator.type}'", DiagnosticSeverity.Error, variableDeclarator.source));
             type = UnknownType;
         }
 
-        if (variableDeclaration.type.nullable)
+        if (variableDeclarator.type.nullable)
             type = new NullableType(type);
 
-        if (variableDeclaration.initializer is not null)
-        {
-            var initializerType = AnalyzeExpression(variableDeclaration.initializer);
-            if (!type.CanHold(initializerType))
-            {
-                if (initializerType is NilType)
-                    _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{variableDeclaration.name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
-                else
-                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{variableDeclaration.name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
-            }
-        }
-        else
-        {
-            if (!variableDeclaration.local)
-                _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"Global variable '{variableDeclaration.name}' must have an initializer", DiagnosticSeverity.Error, variableDeclaration.source));
-            else if (type is not NullableType)
-                _reporter.Report(new Diagnostic(TypeErrors.UninitializedVariable, $"The variable '{variableDeclaration.name}' is not initialized but not marked as nullable", DiagnosticSeverity.Error, variableDeclaration.source));
-        }
-
-        env.Define(variableDeclaration.name, type);
+        return (name, type);
     }
 
     private void AnalyzeDoStatement(DoStatement doStatement)

@@ -34,6 +34,9 @@ public static class Crater
                               hello = "A string"
                               a = 5 + 7
                               b = -4
+
+                              local first: number, second: string, third: number = 1, "2", 3
+                              local one: number, two: string = 1, 2
                               """;
 
         var inputStream = new AntlrInputStream(source)

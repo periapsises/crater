@@ -12,13 +12,17 @@ statement
     | assignment
     ;
 
-variableDeclaration: LOCAL? name=IDENTIFIER COLON typeName (ASSIGN expression)?;
+variableDeclaration: LOCAL? variableDeclarator (COMMA variableDeclarator)* (ASSIGN expressionList)?;
+
+variableDeclarator: name=IDENTIFIER COLON typeName;
 
 doStatement: DO block END;
 
 assignment: IDENTIFIER ASSIGN expression;
 
 typeName: IDENTIFIER QMARK?;
+
+expressionList: expression (COMMA expression)*;
 
 expression
     : op=MINUS expression                                       # UnaryExpression
