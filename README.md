@@ -10,7 +10,7 @@ The listener is can be omited (`-no-listener`) but the visitor is required.
 
 Here is what those commands should look like:
 
-```
+```bash
 java -jar antlr4.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
 ```
 
