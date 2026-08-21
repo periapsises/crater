@@ -61,6 +61,36 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return new DoStatement(block, Source.FromContext(context));
     }
 
+    public override object VisitIfStatement(CraterParser.IfStatementContext context)
+    {
+        var condition = Get<Expression>(context.expression());
+        var block = Get<Block>(context.block());
+
+        var elseIfStatements = new List<ElseIfStatement>();
+        foreach (var elseIfStatementContext in context.elseIfStatement())
+            elseIfStatements.Add(Get<ElseIfStatement>(elseIfStatementContext));
+
+        ElseStatement? elseStatement = null;
+        if (context.elseStatement() != null)
+            elseStatement = Get<ElseStatement>(context.elseStatement());
+
+        return new IfStatement(condition, block, elseIfStatements, elseStatement, Source.FromContext(context));
+    }
+
+    public override object VisitElseIfStatement(CraterParser.ElseIfStatementContext context)
+    {
+        var condition = Get<Expression>(context.expression());
+        var block = Get<Block>(context.block());
+
+        return new ElseIfStatement(condition, block, Source.FromContext(context));
+    }
+
+    public override object VisitElseStatement(CraterParser.ElseStatementContext context)
+    {
+        var block = Get<Block>(context.block());
+        return new ElseStatement(block, Source.FromContext(context));
+    }
+
     public override object VisitAssignment(CraterParser.AssignmentContext context)
     {
         var variable = context.IDENTIFIER().GetText();

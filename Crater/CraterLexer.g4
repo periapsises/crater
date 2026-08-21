@@ -3,6 +3,10 @@
 DO: 'do';
 END: 'end';
 LOCAL: 'local';
+IF: 'if';
+ELSEIF: 'elseif';
+ELSE: 'else';
+THEN: 'then';
 
 NUMBER: Integer Decimal?;
 

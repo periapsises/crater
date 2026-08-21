@@ -9,6 +9,7 @@ block: statement*;
 statement
     : variableDeclaration
     | doStatement
+    | ifStatement
     | assignment
     ;
 
@@ -17,6 +18,12 @@ variableDeclaration: LOCAL? variableDeclarator (COMMA variableDeclarator)* (ASSI
 variableDeclarator: name=IDENTIFIER COLON typeName;
 
 doStatement: DO block END;
+
+ifStatement: IF expression THEN block (elseIfStatement)* elseStatement END;
+
+elseIfStatement: ELSEIF expression THEN block;
+
+elseStatement: ELSE block;
 
 assignment: IDENTIFIER ASSIGN expression;
 

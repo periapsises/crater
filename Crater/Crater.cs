@@ -37,6 +37,14 @@ public static class Crater
 
                               local first: number, second: string, third: number = 1, "2", 3
                               local one: number, two: string = 1, 2
+
+                              if 1 then
+                                  local test: number = 1
+                              elseif 2 then
+                                  test = 2
+                              else
+                                  NewGlobal: number = 10
+                              end
                               """;
 
         var inputStream = new AntlrInputStream(source)

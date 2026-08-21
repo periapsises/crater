@@ -12,6 +12,12 @@ public sealed record VariableDeclarator(string name, TypeName type, Source sourc
 
 public sealed record DoStatement(Block block, Source source) : Node(source);
 
+public sealed record IfStatement(Expression condition, Block block, List<ElseIfStatement> elseIfStatements, ElseStatement? elseStatement, Source source) : Node(source);
+
+public sealed record ElseIfStatement(Expression condition, Block block, Source source) : Node(source);
+
+public sealed record ElseStatement(Block block, Source source) : Node(source);
+
 public sealed record Assignment(string variable, Expression value, Source source) : Node(source);
 
 public sealed record TypeName(string name, bool nullable, Source source) : Node(source)

@@ -57,6 +57,9 @@ public class SemanticAnalyzer
                 case DoStatement doStatement:
                     AnalyzeDoStatement(doStatement);
                     break;
+                case IfStatement ifStatement:
+                    AnalyzeIfStatement(ifStatement);
+                    break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
                     break;
@@ -121,6 +124,37 @@ public class SemanticAnalyzer
     {
         EnterScope();
         AnalyzeBlock(doStatement.block);
+        ExitScope();
+    }
+
+    private void AnalyzeIfStatement(IfStatement ifStatement)
+    {
+        AnalyzeExpression(ifStatement.condition);
+
+        EnterScope();
+        AnalyzeBlock(ifStatement.block);
+        ExitScope();
+
+        foreach (var elseIfStatement in ifStatement.elseIfStatements)
+            AnalyzeElseIfStatement(elseIfStatement);
+
+        if (ifStatement.elseStatement is not null)
+            AnalyzeElseStatement(ifStatement.elseStatement);
+    }
+
+    private void AnalyzeElseIfStatement(ElseIfStatement elseIfStatement)
+    {
+        AnalyzeExpression(elseIfStatement.condition);
+
+        EnterScope();
+        AnalyzeBlock(elseIfStatement.block);
+        ExitScope();
+    }
+
+    private void AnalyzeElseStatement(ElseStatement elseStatement)
+    {
+        EnterScope();
+        AnalyzeBlock(elseStatement.block);
         ExitScope();
     }
 
