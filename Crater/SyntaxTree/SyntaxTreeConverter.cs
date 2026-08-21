@@ -65,6 +65,24 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<Node>
         return new TypeName(name, nullable, Source.FromContext(context));
     }
 
+    public override Node VisitMultiplicativeOperation(CraterParser.MultiplicativeOperationContext context)
+    {
+        var left = Get<Expression>(context.left);
+        var right = Get<Expression>(context.right);
+        var op = context.@operator.Text;
+
+        return new BinaryOperation(left, op, right, Source.FromContext(context));
+    }
+
+    public override Node VisitAdditiveOperation(CraterParser.AdditiveOperationContext context)
+    {
+        var left = Get<Expression>(context.left);
+        var right = Get<Expression>(context.right);
+        var op = context.@operator.Text;
+
+        return new BinaryOperation(left, op, right, Source.FromContext(context));
+    }
+
     public override Node VisitNumberLiteral(CraterParser.NumberLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.Number, Source.FromContext(context));

@@ -28,5 +28,9 @@ IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 COLON: ':';
 ASSIGN: '=';
 QMARK: '?';
+PLUS: '+';
+MINUS: '-';
+STAR: '*';
+SLASH: '/';
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);

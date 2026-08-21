@@ -10,4 +10,9 @@ public abstract class Type(string name)
     {
         return other == this || other is UnknownType;
     }
+
+    public virtual Type? ResolveBinaryOperation(string op, Type other)
+    {
+        return other is UnknownType ? other : null;
+    }
 }

@@ -16,6 +16,8 @@ public sealed record TypeName(string name, bool nullable, Source source) : Node(
 
 public abstract record Expression(Source source) : Node(source);
 
+public sealed record BinaryOperation(Expression left, string op, Expression right, Source source) : Expression(source);
+
 public enum LiteralKind
 {
     Number,

@@ -32,7 +32,7 @@ public static class Crater
                               MyGlobalNumber: number
 
                               hello = "A string"
-                              a = 5
+                              a = 5 + 7
                               """;
 
         var inputStream = new AntlrInputStream(source)

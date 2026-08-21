@@ -133,8 +133,22 @@ public class SemanticAnalyzer
         return expression switch
         {
             Literal literal => AnalyzeLiteral(literal),
+            BinaryOperation binaryOperation => AnalyzeBinaryOperation(binaryOperation),
             _ => throw new SwitchExpressionException(expression)
         };
+    }
+
+    private Type AnalyzeBinaryOperation(BinaryOperation binaryOperation)
+    {
+        var leftType = AnalyzeExpression(binaryOperation.left);
+        var rightType = AnalyzeExpression(binaryOperation.right);
+
+        var resultType = leftType.ResolveBinaryOperation(binaryOperation.op, rightType);
+        if (resultType != null)
+            return resultType;
+
+        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot perform binary operation '{binaryOperation.op}' on types '{leftType.Name}' and '{rightType.Name}'", DiagnosticSeverity.Error, binaryOperation.source));
+        return UnknownType;
     }
 
     private Type AnalyzeLiteral(Literal literal)

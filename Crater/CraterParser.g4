@@ -20,11 +20,11 @@ assignment: IDENTIFIER ASSIGN expression;
 
 typeName: IDENTIFIER QMARK?;
 
-expression: literal;
-
-literal
-    : NUMBER  #NumberLiteral
-    | STRING  #StringLiteral
-    | BOOLEAN #BooleanLiteral
-    | NIL     #NilLiteral
+expression
+    : left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
+    | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
+    | NUMBER                                                    # NumberLiteral
+    | STRING                                                    # StringLiteral
+    | BOOLEAN                                                   # BooleanLiteral
+    | NIL                                                       # NilLiteral
     ;
