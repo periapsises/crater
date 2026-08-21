@@ -10,3 +10,6 @@ max_line_length = off
 
 resharper_wrap_lines = false
 resharper_csharp_wrap_lines = false
+
+[*.md]
+trim_trailing_whitespace = false
