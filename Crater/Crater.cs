@@ -64,6 +64,11 @@ public static class Crater
                               local myThirdInvalidAndOr: number = myNonNullable and myNullable or myNullable
                               local myValidAndOr: number = myNullable and myNonNullable or myNonNullable
                               local myOtherValidAndOr: number = myNullable and myNullable or myNonNullable
+
+                              local myBoolean: bool = false
+
+                              local myInvalidTernary: number = myBoolean and myNonNullable or myBoolean
+                              local myValidTernary: number = myBoolean and myNonNullable or myNonNullable
                               """;
 
         var inputStream = new AntlrInputStream(source)

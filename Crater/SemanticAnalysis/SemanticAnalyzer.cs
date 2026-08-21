@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Crater.Diagnostics;
 using Crater.Diagnostics.Codes;
@@ -209,6 +210,19 @@ public class SemanticAnalyzer
 
     private Type AnalyzeBinaryOperation(BinaryOperation binaryOperation)
     {
+        if (IsTernaryPattern(binaryOperation, out var expressionA, out var expressionB))
+        {
+            var typeA = AnalyzeExpression(expressionA);
+            var typeB = AnalyzeExpression(expressionB);
+
+            var ternaryResultType = Type.GetCommonType(typeA, typeB);
+            if (ternaryResultType != null)
+                return ternaryResultType;
+
+            _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, $"Ternary results have incompatible types '{typeA}' and '{typeB}'", DiagnosticSeverity.Error, binaryOperation.source));
+            return UnknownType;
+        }
+
         var leftType = AnalyzeExpression(binaryOperation.left);
         var rightType = AnalyzeExpression(binaryOperation.right);
 
@@ -230,5 +244,21 @@ public class SemanticAnalyzer
             LiteralKind.Nil => NilType,
             _ => throw new SwitchExpressionException(literal.kind)
         };
+    }
+
+    private bool IsTernaryPattern(BinaryOperation binaryOperation, [NotNullWhen(true)] out Expression? valueA, [NotNullWhen(true)] out Expression? valueB)
+    {
+        valueA = null;
+        valueB = null;
+
+        if (binaryOperation.op != "or")
+            return false;
+
+        if (binaryOperation.left is not BinaryOperation { op: "and" } leftBinaryOperation)
+            return false;
+
+        valueA = leftBinaryOperation.right;
+        valueB = binaryOperation.right;
+        return true;
     }
 }
