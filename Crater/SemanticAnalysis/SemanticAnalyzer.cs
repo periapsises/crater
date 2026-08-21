@@ -68,7 +68,7 @@ public class SemanticAnalyzer
 
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
-        var env = variableDeclaration.local ? _global : _local;
+        var env = variableDeclaration.local ? _local : _global;
 
         for (var i = 0; i < variableDeclaration.declarators.Count; i++)
         {
