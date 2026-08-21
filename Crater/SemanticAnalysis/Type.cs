@@ -60,4 +60,12 @@ public abstract class Type
 
     public abstract Type GetNullable();
     public abstract Type GetNonNullable();
+
+    public override string ToString()
+    {
+        if (Nullable)
+            return Name + "?";
+
+        return Name;
+    }
 }

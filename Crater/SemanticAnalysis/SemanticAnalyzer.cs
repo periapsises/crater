@@ -84,9 +84,9 @@ public class SemanticAnalyzer
                 if (!type.CanHold(initializerType))
                 {
                     if (initializerType is NilType)
-                        _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                        _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                     else
-                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializerType.Name}' is incompatible with the declared type of '{type.Name}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializerType}' is incompatible with the declared type of '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                 }
             }
             else
@@ -171,7 +171,7 @@ public class SemanticAnalyzer
         if (variableType.CanHold(valueType))
             return;
 
-        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Name}' to variable of type '{variableType.Name}'", DiagnosticSeverity.Error, assignment.source));
+        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, assignment.source));
     }
 
     private Type AnalyzeExpression(Expression expression)
@@ -203,7 +203,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return resultType;
 
-        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedUnaryOperation, $"Cannot perform unary operation '{unaryOperation.op}' on type '{expressionType.Name}'", DiagnosticSeverity.Error, unaryOperation.source));
+        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedUnaryOperation, $"Cannot perform unary operation '{unaryOperation.op}' on type '{expressionType}'", DiagnosticSeverity.Error, unaryOperation.source));
         return UnknownType;
     }
 
@@ -216,7 +216,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return resultType;
 
-        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot perform binary operation '{binaryOperation.op}' on types '{leftType.Name}' and '{rightType.Name}'", DiagnosticSeverity.Error, binaryOperation.source));
+        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot perform binary operation '{binaryOperation.op}' on types '{leftType}' and '{rightType}'", DiagnosticSeverity.Error, binaryOperation.source));
         return UnknownType;
     }
 
