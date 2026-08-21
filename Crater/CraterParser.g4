@@ -38,6 +38,6 @@ expression
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
-    | BOOLEAN                                                   # BooleanLiteral
+    | (TRUE | FALSE)                                            # BooleanLiteral
     | NIL                                                       # NilLiteral
     ;

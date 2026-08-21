@@ -1,12 +1,51 @@
 ﻿lexer grammar CraterLexer;
 
-DO: 'do';
-END: 'end';
-LOCAL: 'local';
-IF: 'if';
-ELSEIF: 'elseif';
-ELSE: 'else';
-THEN: 'then';
+// ==================================================
+// Keywords
+// ==================================================
+
+// Control Flow
+IF      : 'if';
+THEN    : 'then';
+ELSEIF  : 'elseif';
+ELSE    : 'else';
+DO      : 'do';
+END     : 'end';
+
+// Declarations & Scoping
+LOCAL   : 'local';
+
+// Literal Keywords
+TRUE    : 'true';
+FALSE   : 'false';
+NIL     : 'nil';
+
+// ==================================================
+// Operators & Punctuation
+// ==================================================
+
+// Multi-Character
+
+// Single-Character
+PLUS    : '+';
+MINUS   : '-';
+STAR    : '*';
+SLASH   : '/';
+
+COMMA   : ',';
+COLON   : ':';
+ASSIGN  : '=';
+QMARK   : '?';
+
+// ==================================================
+// Identifiers
+// ==================================================
+
+IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
+
+// ==================================================
+// Dynamic Pattern Literals
+// ==================================================
 
 NUMBER: Integer Decimal?;
 
@@ -16,26 +55,15 @@ fragment Decimal: '.' [0-9]+;
 STRING: '"' (EscapeSequence | ~('\\' | '"'))* '"';
 
 fragment EscapeSequence
-    : '\\' [abfnrtvz"'|$#\\]
+    : '\\' [abfnrtvz"'\\]
     | '\\' '\r'? '\n'
-    | '\\' Integer
+    | '\\' [0-9] [0-9]? [0-9]?
     | '\\x' [a-fA-F0-9]+
     | '\\u{' [a-fA-F0-9]+ '}'
     ;
 
-BOOLEAN: 'true' | 'false';
-
-NIL: 'nil';
-
-IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
-
-COLON: ':';
-ASSIGN: '=';
-QMARK: '?';
-PLUS: '+';
-MINUS: '-';
-STAR: '*';
-SLASH: '/';
-COMMA: ',';
+// ==================================================
+// Whitespace & Comments
+// ==================================================
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);
