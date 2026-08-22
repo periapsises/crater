@@ -104,8 +104,8 @@ public class SemanticAnalyzer
 
     private (string, Type) AnalyzeVariableDeclarator(Environment env, VariableDeclarator variableDeclarator)
     {
-        if (env.GetType(variableDeclarator.name) != null)
-            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable {variableDeclarator.name} shadows exiting binding", DiagnosticSeverity.Warning, variableDeclarator.source));
+        if (_local.GetType(variableDeclarator.name) != null)
+            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable '{variableDeclarator.name}' shadows exiting binding", DiagnosticSeverity.Warning, variableDeclarator.source));
 
         var name = variableDeclarator.name;
         var type = _types.GetValueOrDefault(variableDeclarator.type.name);
