@@ -69,6 +69,10 @@ public static class Crater
 
                               local myInvalidTernary: number = myBoolean and myNonNullable or myBoolean
                               local myValidTernary: number = myBoolean and myNonNullable or myNonNullable
+
+                              local function myFunction(a: number, b: number): void
+                                  local c: number = a + b
+                              end
                               """;
 
         var inputStream = new AntlrInputStream(source)

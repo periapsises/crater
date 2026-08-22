@@ -55,6 +55,9 @@ public class SemanticAnalyzer
                 case VariableDeclaration variableDeclaration:
                     AnalyzeVariableDeclaration(variableDeclaration);
                     break;
+                case FunctionDeclaration functionDeclaration:
+                    AnalyzeFunctionDeclaration(functionDeclaration);
+                    break;
                 case DoStatement doStatement:
                     AnalyzeDoStatement(doStatement);
                     break;
@@ -108,17 +111,45 @@ public class SemanticAnalyzer
             _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Variable '{variableDeclarator.name}' shadows exiting binding", DiagnosticSeverity.Warning, variableDeclarator.source));
 
         var name = variableDeclarator.name;
-        var type = _types.GetValueOrDefault(variableDeclarator.type.name);
-        if (type == null)
-        {
-            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{variableDeclarator.type}'", DiagnosticSeverity.Error, variableDeclarator.source));
-            type = UnknownType;
-        }
-
-        if (variableDeclarator.type.nullable)
-            type = type.GetNullable();
+        var type = AnalyzeTypeName(variableDeclarator.type);
 
         return (name, type);
+    }
+
+    private void AnalyzeFunctionDeclaration(FunctionDeclaration functionDeclaration)
+    {
+        var env = functionDeclaration.local ? _local : _global;
+
+        if (_local.GetType(functionDeclaration.name) != null)
+            _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Function '{functionDeclaration.name}' shadows an existing binding", DiagnosticSeverity.Warning, functionDeclaration.source));
+
+        var parameterTypes = new List<Type>();
+        foreach (var parameter in functionDeclaration.parameters)
+            parameterTypes.Add(AnalyzeTypeName(parameter.type));
+
+        var returnTypes = new List<Type>();
+        foreach (var returnType in functionDeclaration.returnTypes)
+            returnTypes.Add(AnalyzeTypeName(returnType));
+
+        env.Define(functionDeclaration.name, new FunctionType(parameterTypes, returnTypes));
+
+        EnterScope();
+
+        for (var i = 0; i < parameterTypes.Count; i++)
+        {
+            var name = functionDeclaration.parameters[i].name;
+
+            if (_local.GetType(name) != null)
+                _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Parameter '{name}' shadows an existing binding", DiagnosticSeverity.Warning, functionDeclaration.source));
+
+            _local.Define(name, parameterTypes[i]);
+        }
+
+        AnalyzeBlock(functionDeclaration.block);
+
+        // TODO: Verify that the block returns the expected values
+
+        ExitScope();
     }
 
     private void AnalyzeDoStatement(DoStatement doStatement)
@@ -173,6 +204,21 @@ public class SemanticAnalyzer
             return;
 
         _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, assignment.source));
+    }
+
+    private Type AnalyzeTypeName(TypeName typeName)
+    {
+        var type = _types.GetValueOrDefault(typeName.name);
+        if (type == null)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{typeName}'", DiagnosticSeverity.Error, typeName.source));
+            type = UnknownType;
+        }
+
+        if (typeName.nullable)
+            type = type.GetNullable();
+
+        return type;
     }
 
     private Type AnalyzeExpression(Expression expression)

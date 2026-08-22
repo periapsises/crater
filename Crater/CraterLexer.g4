@@ -14,6 +14,7 @@ END     : 'end';
 
 // Declarations & Scoping
 LOCAL   : 'local';
+FUNCTION: 'function';
 
 // Logical Operators
 AND     : 'and';
@@ -24,6 +25,7 @@ NOT     : 'not';
 TRUE    : 'true';
 FALSE   : 'false';
 NIL     : 'nil';
+VOID    : 'void';
 
 // ==================================================
 // Operators & Punctuation
@@ -41,6 +43,9 @@ COMMA   : ',';
 COLON   : ':';
 ASSIGN  : '=';
 QMARK   : '?';
+
+LPAREN  : '(';
+RPAREN  : ')';
 
 // ==================================================
 // Identifiers

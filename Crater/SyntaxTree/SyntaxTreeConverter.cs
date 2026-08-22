@@ -55,6 +55,53 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return new VariableDeclarator(name, type, Source.FromContext(context));
     }
 
+    public override object VisitFunctionDeclaration(CraterParser.FunctionDeclarationContext context)
+    {
+        var local = context.LOCAL() != null;
+        var name = context.name.Text;
+
+        List<Parameter> parameters;
+        if (context.parameters() != null)
+            parameters = Get<List<Parameter>>(context.parameters());
+        else
+            parameters = [];
+
+        var returnTypes = Get<List<TypeName>>(context.returnTypes());
+        var block = Get<Block>(context.block());
+
+        return new FunctionDeclaration(local, name, parameters, returnTypes, block, Source.FromContext(context));
+    }
+
+    public override object VisitParameters(CraterParser.ParametersContext context)
+    {
+        var parameters = new List<Parameter>();
+        foreach (var parameterContext in context.parameter())
+            parameters.Add(Get<Parameter>(parameterContext));
+
+        return parameters;
+    }
+
+    public override object VisitParameter(CraterParser.ParameterContext context)
+    {
+        var name = context.name.Text;
+        var type = Get<TypeName>(context.typeName());
+
+        return new Parameter(name, type, Source.FromContext(context));
+    }
+
+    public override object VisitReturnTypes(CraterParser.ReturnTypesContext context)
+    {
+        var returnTypes = new List<TypeName>();
+
+        if (context.VOID() != null)
+            return returnTypes;
+
+        foreach (var returnTypeContext in context.typeName())
+            returnTypes.Add(Get<TypeName>(returnTypeContext));
+
+        return returnTypes;
+    }
+
     public override object VisitDoStatement(CraterParser.DoStatementContext context)
     {
         var block = Get<Block>(context.block());

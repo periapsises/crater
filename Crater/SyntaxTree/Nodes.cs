@@ -10,6 +10,10 @@ public sealed record VariableDeclaration(bool local, List<VariableDeclarator> de
 
 public sealed record VariableDeclarator(string name, TypeName type, Source source) : Node(source);
 
+public sealed record FunctionDeclaration(bool local, string name, List<Parameter> parameters, List<TypeName> returnTypes, Block block, Source source) : Node(source);
+
+public sealed record Parameter(string name, TypeName type, Source source) : Node(source);
+
 public sealed record DoStatement(Block block, Source source) : Node(source);
 
 public sealed record IfStatement(Expression condition, Block block, List<ElseIfStatement> elseIfStatements, ElseStatement? elseStatement, Source source) : Node(source);

@@ -8,6 +8,7 @@ block: statement*;
 
 statement
     : variableDeclaration
+    | functionDeclaration
     | doStatement
     | ifStatement
     | assignment
@@ -16,6 +17,14 @@ statement
 variableDeclaration: LOCAL? variableDeclarator (COMMA variableDeclarator)* (ASSIGN expressionList)?;
 
 variableDeclarator: name=IDENTIFIER COLON typeName;
+
+functionDeclaration: LOCAL? FUNCTION name=IDENTIFIER LPAREN parameters? RPAREN COLON returnTypes block END;
+
+parameters: parameter (COMMA parameter)*;
+
+parameter: name=IDENTIFIER COLON typeName;
+
+returnTypes: VOID | typeName (COMMA typeName)*;
 
 doStatement: DO block END;
 
