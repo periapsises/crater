@@ -9,77 +9,15 @@ namespace Crater;
 
 public static class Crater
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        const string source = """
-                              hello: number = 5
-                              world: number = "Hi"
-                              local hello: string = "Hello"
-
-                              do
-                                  local hi: bool = true
-                                  local hello: bool = false
-                                  local sup: bool = 5
-                              end
-
-                              local a: number = nil
-                              local b: number? = nil
-                              local c: number? = 5
-
-                              local d: number
-                              local e: number?
-
-                              MyGlobalNumber: number
-
-                              hello = "A string"
-                              a = 5 + 7
-                              b = -4
-
-                              local first: number, second: string, third: number = 1, "2", 3
-                              local one: number, two: string = 1, 2
-
-                              if first then
-                                  local test: number = 1
-                              elseif fourth then
-                                  test = 2
-                              else
-                                  NewGlobal: number = 10 + a
-                              end
-
-                              local myNullable: number?
-                              local myNonNullable: number = 5
-
-                              local myInvalidNot: number = not myNullable
-                              local myValidNot: bool = not nil
-
-                              local myInvalidOr: number = myNullable or myNullable
-                              local myValidOr: number = myNullable or myNonNullable
-
-                              local myInvalidAnd: number = myNullable and myNonNullable
-                              local myOtherInvalidAnd: number = myNonNullable and myNullable
-                              local myValidAnd: number = myNonNullable and myNonNullable
-
-                              local myInvalidAndOr: number = myNullable and myNullable or myNullable
-                              local myOtherInvalidAndOr: number = myNullable and myNonNullable or myNullable
-                              local myThirdInvalidAndOr: number = myNonNullable and myNullable or myNullable
-                              local myValidAndOr: number = myNullable and myNonNullable or myNonNullable
-                              local myOtherValidAndOr: number = myNullable and myNullable or myNonNullable
-
-                              local myBoolean: bool = false
-
-                              local myInvalidTernary: number = myBoolean and myNonNullable or myBoolean
-                              local myValidTernary: number = myBoolean and myNonNullable or myNonNullable
-
-                              local function myFunction(a: number, b: number): void
-                                  local c: number = a + b
-                              end
-                              """;
-
-        var inputStream = new AntlrInputStream(source)
+        if (args.Length != 1)
         {
-            name = "Unknown"
-        };
+            Console.WriteLine("Expected a file path to compile");
+            return 1;
+        }
 
+        var inputStream = new AntlrFileStream(args[0]);
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
@@ -96,12 +34,25 @@ public static class Crater
         semanticAnalyzer.AnalyzeProgram(program);
 
         foreach (var diagnostic in reporter)
-            Console.WriteLine($"[{diagnostic.code}] {diagnostic.message} at line {diagnostic.source.StartLine}");
+        {
+            var diagnosticKind = diagnostic.severity switch
+            {
+                DiagnosticSeverity.Info => "info",
+                DiagnosticSeverity.Warning => "warn",
+                DiagnosticSeverity.Error => "error",
+                _ => "fatal"
+            };
+
+            Console.WriteLine($"{diagnostic.source.File}:{diagnostic.source.StartLine}:{diagnostic.source.StartColumn}: {diagnosticKind} [{diagnostic.code}]");
+            Console.WriteLine($"    {diagnostic.message}");
+        }
 
         if (reporter.hasErrors)
-            return;
+            return 1;
 
         var output = Compiler.Compile(program);
         Console.WriteLine(output);
+
+        return 0;
     }
 }
