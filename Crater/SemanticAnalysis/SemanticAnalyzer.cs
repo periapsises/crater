@@ -217,7 +217,7 @@ public class SemanticAnalyzer
             }
             else if (!variableType.CanHold(valueType.Item1))
             {
-                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
     }
