@@ -251,6 +251,8 @@ public class SemanticAnalyzer
         {
             var typeA = AnalyzeExpression(expressionA);
             var typeB = AnalyzeExpression(expressionB);
+            AnalyzeExpression(binaryOperation.left);
+
 
             var ternaryResultType = Type.GetCommonType(typeA, typeB);
             if (ternaryResultType != null)
