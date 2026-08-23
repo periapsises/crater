@@ -46,6 +46,9 @@ public class Compiler
                 case Assignment assignment:
                     CompileAssignment(assignment);
                     break;
+                case ReturnStatement returnStatement:
+                    CompileReturnStatement(returnStatement);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -166,6 +169,27 @@ public class Compiler
         {
             CompileExpression(assignment.values[i]);
             if (i < valueCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.WriteLine();
+    }
+
+    private void CompileReturnStatement(ReturnStatement returnStatement)
+    {
+        var returnCount = returnStatement.returnValues.Count;
+        if (returnCount == 0)
+        {
+            _writer.WriteLine("return");
+            return;
+        }
+
+        _writer.Write("return ");
+
+        for (var i = 0; i < returnCount; i++)
+        {
+            CompileExpression(returnStatement.returnValues[i]);
+            if (i < returnCount - 1)
                 _writer.Write(", ");
         }
 

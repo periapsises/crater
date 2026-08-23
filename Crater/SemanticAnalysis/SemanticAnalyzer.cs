@@ -67,6 +67,9 @@ public class SemanticAnalyzer
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
                     break;
+                case ReturnStatement returnStatement:
+                    AnalyzeReturnStatement(returnStatement);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -217,6 +220,11 @@ public class SemanticAnalyzer
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
+    }
+
+    private void AnalyzeReturnStatement(ReturnStatement returnStatement)
+    {
+        ExpandExpressionList(returnStatement.returnValues);
     }
 
     private Type AnalyzeTypeName(TypeName typeName)

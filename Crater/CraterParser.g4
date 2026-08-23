@@ -12,6 +12,7 @@ statement
     | doStatement
     | ifStatement
     | assignment
+    | returnStatement
     ;
 
 variableDeclaration: LOCAL? variableDeclarator (COMMA variableDeclarator)* (ASSIGN expressionList)?;
@@ -35,6 +36,8 @@ elseIfStatement: ELSEIF expression THEN block;
 elseStatement: ELSE block;
 
 assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
+
+returnStatement: RETURN expressionList?;
 
 typeName: IDENTIFIER QMARK?;
 

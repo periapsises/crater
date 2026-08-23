@@ -149,6 +149,15 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return new Assignment(variables, values, Source.FromContext(context));
     }
 
+    public override object VisitReturnStatement(CraterParser.ReturnStatementContext context)
+    {
+        if (context.expressionList() == null)
+            return new ReturnStatement([], Source.FromContext(context));
+
+        var returnValues = Get<List<Expression>>(context.expressionList());
+        return new ReturnStatement(returnValues, Source.FromContext(context));
+    }
+
     public override object VisitTypeName(CraterParser.TypeNameContext context)
     {
         var name = context.IDENTIFIER().GetText();

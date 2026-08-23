@@ -24,6 +24,8 @@ public sealed record ElseStatement(Block block, Source source) : Node(source);
 
 public sealed record Assignment(List<string> variables, List<Expression> values, Source source) : Node(source);
 
+public sealed record ReturnStatement(List<Expression> returnValues, Source source) : Node(source);
+
 public sealed record TypeName(string name, bool nullable, Source source) : Node(source)
 {
     public override string ToString()

@@ -11,6 +11,7 @@ ELSEIF  : 'elseif';
 ELSE    : 'else';
 DO      : 'do';
 END     : 'end';
+RETURN  : 'return';
 
 // Declarations & Scoping
 LOCAL   : 'local';
