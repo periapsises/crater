@@ -85,6 +85,9 @@ public class Compiler
     {
         switch (expression)
         {
+            case UnaryOperation unaryOperation:
+                CompileUnaryOperation(unaryOperation);
+                break;
             case Literal literal:
                 CompileLiteral(literal);
                 break;
@@ -94,6 +97,12 @@ public class Compiler
             default:
                 throw new SwitchExpressionException(expression);
         }
+    }
+
+    private void CompileUnaryOperation(UnaryOperation unaryOperation)
+    {
+        _writer.Write(unaryOperation.op);
+        CompileExpression(unaryOperation.expression);
     }
 
     private void CompileLiteral(Literal literal)
