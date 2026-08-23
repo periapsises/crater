@@ -88,6 +88,9 @@ public class Compiler
             case UnaryOperation unaryOperation:
                 CompileUnaryOperation(unaryOperation);
                 break;
+            case BinaryOperation binaryOperation:
+                CompileBinaryOperation(binaryOperation);
+                break;
             case Literal literal:
                 CompileLiteral(literal);
                 break;
@@ -103,6 +106,13 @@ public class Compiler
     {
         _writer.Write(unaryOperation.op);
         CompileExpression(unaryOperation.expression);
+    }
+
+    private void CompileBinaryOperation(BinaryOperation binaryOperation)
+    {
+        CompileExpression(binaryOperation.left);
+        _writer.Write($" {binaryOperation.op} ");
+        CompileExpression(binaryOperation.right);
     }
 
     private void CompileLiteral(Literal literal)
