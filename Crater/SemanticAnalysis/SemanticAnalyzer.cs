@@ -46,7 +46,7 @@ public class SemanticAnalyzer
         AnalyzeBlock(program.block);
     }
 
-    private void AnalyzeBlock(Block block)
+    private void AnalyzeBlock(Block block, List<Type>? expectedReturns = null)
     {
         foreach (var statement in block.statements)
         {
@@ -62,13 +62,13 @@ public class SemanticAnalyzer
                     AnalyzeDoStatement(doStatement);
                     break;
                 case IfStatement ifStatement:
-                    AnalyzeIfStatement(ifStatement);
+                    AnalyzeIfStatement(ifStatement, expectedReturns);
                     break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
                     break;
                 case ReturnStatement returnStatement:
-                    AnalyzeReturnStatement(returnStatement);
+                    AnalyzeReturnStatement(returnStatement, expectedReturns);
                     break;
                 default:
                     throw new SwitchExpressionException(statement);
@@ -149,7 +149,7 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        AnalyzeBlock(functionDeclaration.block);
+        AnalyzeBlock(functionDeclaration.block, returnTypes);
 
         // TODO: Verify that the block returns the expected values
 
@@ -163,34 +163,34 @@ public class SemanticAnalyzer
         ExitScope();
     }
 
-    private void AnalyzeIfStatement(IfStatement ifStatement)
+    private void AnalyzeIfStatement(IfStatement ifStatement, List<Type>? expectedReturns = null)
     {
         AnalyzeExpression(ifStatement.condition);
 
         EnterScope();
-        AnalyzeBlock(ifStatement.block);
+        AnalyzeBlock(ifStatement.block, expectedReturns);
         ExitScope();
 
         foreach (var elseIfStatement in ifStatement.elseIfStatements)
-            AnalyzeElseIfStatement(elseIfStatement);
+            AnalyzeElseIfStatement(elseIfStatement, expectedReturns);
 
         if (ifStatement.elseStatement is not null)
-            AnalyzeElseStatement(ifStatement.elseStatement);
+            AnalyzeElseStatement(ifStatement.elseStatement, expectedReturns);
     }
 
-    private void AnalyzeElseIfStatement(ElseIfStatement elseIfStatement)
+    private void AnalyzeElseIfStatement(ElseIfStatement elseIfStatement, List<Type>? expectedReturns = null)
     {
         AnalyzeExpression(elseIfStatement.condition);
 
         EnterScope();
-        AnalyzeBlock(elseIfStatement.block);
+        AnalyzeBlock(elseIfStatement.block, expectedReturns);
         ExitScope();
     }
 
-    private void AnalyzeElseStatement(ElseStatement elseStatement)
+    private void AnalyzeElseStatement(ElseStatement elseStatement, List<Type>? expectedReturns = null)
     {
         EnterScope();
-        AnalyzeBlock(elseStatement.block);
+        AnalyzeBlock(elseStatement.block, expectedReturns);
         ExitScope();
     }
 
@@ -222,9 +222,29 @@ public class SemanticAnalyzer
         }
     }
 
-    private void AnalyzeReturnStatement(ReturnStatement returnStatement)
+    private void AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)
     {
-        ExpandExpressionList(returnStatement.returnValues);
+        var returnTypes = ExpandExpressionList(returnStatement.returnValues);
+        if (expectedReturnTypes == null)
+            return;
+
+        for (var i = 0; i < expectedReturnTypes.Count; i++)
+        {
+            var expectedType = expectedReturnTypes[i];
+
+            if (i < returnTypes.Count)
+            {
+                if (expectedType.CanHold(returnTypes[i].Item1))
+                    continue;
+
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected to return '{expectedType}' but got '{returnTypes[i].Item1}", DiagnosticSeverity.Error, returnTypes[i].Item2));
+            }
+            else if (!expectedType.Nullable)
+            {
+                // TODO: Determine if a custom code is needed
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected a '{expectedType}' value to be returned", DiagnosticSeverity.Error, returnStatement.source));
+            }
+        }
     }
 
     private Type AnalyzeTypeName(TypeName typeName)
