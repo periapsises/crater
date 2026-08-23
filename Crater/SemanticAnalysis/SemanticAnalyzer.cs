@@ -46,8 +46,10 @@ public class SemanticAnalyzer
         AnalyzeBlock(program.block);
     }
 
-    private void AnalyzeBlock(Block block, List<Type>? expectedReturns = null)
+    private bool AnalyzeBlock(Block block, List<Type>? expectedReturns = null)
     {
+        var blocking = false;
+
         foreach (var statement in block.statements)
         {
             switch (statement)
@@ -62,18 +64,21 @@ public class SemanticAnalyzer
                     AnalyzeDoStatement(doStatement);
                     break;
                 case IfStatement ifStatement:
-                    AnalyzeIfStatement(ifStatement, expectedReturns);
+                    blocking |= AnalyzeIfStatement(ifStatement, expectedReturns);
                     break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
                     break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
+                    blocking = true;
                     break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
         }
+
+        return blocking;
     }
 
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
@@ -149,9 +154,10 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        AnalyzeBlock(functionDeclaration.block, returnTypes);
-
-        // TODO: Verify that the block returns the expected values
+        var blocked = AnalyzeBlock(functionDeclaration.block, returnTypes);
+        if (!blocked && returnTypes.Count != 0)
+            // TODO: Error code for when not all paths return
+            _reporter.Report(new Diagnostic("0", $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
 
         ExitScope();
     }
@@ -163,35 +169,43 @@ public class SemanticAnalyzer
         ExitScope();
     }
 
-    private void AnalyzeIfStatement(IfStatement ifStatement, List<Type>? expectedReturns = null)
+    private bool AnalyzeIfStatement(IfStatement ifStatement, List<Type>? expectedReturns = null)
     {
         AnalyzeExpression(ifStatement.condition);
 
         EnterScope();
-        AnalyzeBlock(ifStatement.block, expectedReturns);
+        var mainIsBlocking = AnalyzeBlock(ifStatement.block, expectedReturns);
         ExitScope();
 
+        var allElseIfsBlocking = true;
         foreach (var elseIfStatement in ifStatement.elseIfStatements)
-            AnalyzeElseIfStatement(elseIfStatement, expectedReturns);
+            allElseIfsBlocking &= AnalyzeElseIfStatement(elseIfStatement, expectedReturns);
 
+        var elseIsBlocking = false;
         if (ifStatement.elseStatement is not null)
-            AnalyzeElseStatement(ifStatement.elseStatement, expectedReturns);
+            elseIsBlocking = AnalyzeElseStatement(ifStatement.elseStatement, expectedReturns);
+
+        return mainIsBlocking && allElseIfsBlocking && elseIsBlocking;
     }
 
-    private void AnalyzeElseIfStatement(ElseIfStatement elseIfStatement, List<Type>? expectedReturns = null)
+    private bool AnalyzeElseIfStatement(ElseIfStatement elseIfStatement, List<Type>? expectedReturns = null)
     {
         AnalyzeExpression(elseIfStatement.condition);
 
         EnterScope();
-        AnalyzeBlock(elseIfStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseIfStatement.block, expectedReturns);
         ExitScope();
+
+        return blocking;
     }
 
-    private void AnalyzeElseStatement(ElseStatement elseStatement, List<Type>? expectedReturns = null)
+    private bool AnalyzeElseStatement(ElseStatement elseStatement, List<Type>? expectedReturns = null)
     {
         EnterScope();
-        AnalyzeBlock(elseStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseStatement.block, expectedReturns);
         ExitScope();
+
+        return blocking;
     }
 
     private void AnalyzeAssignment(Assignment assignment)
