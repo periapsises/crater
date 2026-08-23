@@ -34,7 +34,7 @@ elseIfStatement: ELSEIF expression THEN block;
 
 elseStatement: ELSE block;
 
-assignment: IDENTIFIER ASSIGN expression;
+assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 
 typeName: IDENTIFIER QMARK?;
 

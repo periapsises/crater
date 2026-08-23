@@ -140,10 +140,13 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
 
     public override object VisitAssignment(CraterParser.AssignmentContext context)
     {
-        var variable = context.IDENTIFIER().GetText();
-        var value = Get<Expression>(context.expression());
+        var variables = new List<string>();
+        foreach (var identifier in context.IDENTIFIER())
+            variables.Add(identifier.GetText());
 
-        return new Assignment(variable, value, Source.FromContext(context));
+        var values = Get<List<Expression>>(context.expressionList());
+
+        return new Assignment(variables, values, Source.FromContext(context));
     }
 
     public override object VisitTypeName(CraterParser.TypeNameContext context)

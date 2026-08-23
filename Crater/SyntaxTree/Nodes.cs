@@ -22,7 +22,7 @@ public sealed record ElseIfStatement(Expression condition, Block block, Source s
 
 public sealed record ElseStatement(Block block, Source source) : Node(source);
 
-public sealed record Assignment(string variable, Expression value, Source source) : Node(source);
+public sealed record Assignment(List<string> variables, List<Expression> values, Source source) : Node(source);
 
 public sealed record TypeName(string name, bool nullable, Source source) : Node(source)
 {

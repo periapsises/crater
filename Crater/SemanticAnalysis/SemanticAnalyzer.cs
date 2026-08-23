@@ -193,18 +193,30 @@ public class SemanticAnalyzer
 
     private void AnalyzeAssignment(Assignment assignment)
     {
-        var variableType = _local.GetType(assignment.variable);
-        if (variableType == null)
+        var assignedTypes = ExpandExpressionList(assignment.values);
+
+        for (var i = 0; i < assignment.variables.Count; i++)
         {
-            _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{assignment.variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
-            return;
+            var variable = assignment.variables[i];
+
+            var variableType = _local.GetType(variable);
+            if (variableType == null)
+            {
+                _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
+                return;
+            }
+
+            var valueType = assignedTypes.ElementAtOrDefault(i);
+            if (valueType.Item1 == null)
+            {
+                if (!variableType.Nullable)
+                    _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to non-nullable value '{variable}'", DiagnosticSeverity.Error, assignment.source));
+            }
+            else if (!variableType.CanHold(valueType.Item1))
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
+            }
         }
-
-        var valueType = AnalyzeExpression(assignment.value).FirstOrDefault() ?? NilType;
-        if (variableType.CanHold(valueType))
-            return;
-
-        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType}' to variable of type '{variableType}'", DiagnosticSeverity.Error, assignment.source));
     }
 
     private Type AnalyzeTypeName(TypeName typeName)
