@@ -77,20 +77,21 @@ public class SemanticAnalyzer
     {
         var env = variableDeclaration.local ? _local : _global;
 
+        var initializerTypes = ExpandExpressionList(variableDeclaration.initializers);
+
         for (var i = 0; i < variableDeclaration.declarators.Count; i++)
         {
             var (name, type) = AnalyzeVariableDeclarator(env, variableDeclaration.declarators[i]);
-            var initializer = variableDeclaration.initializers.ElementAtOrDefault(i);
+            var initializer = initializerTypes.ElementAtOrDefault(i);
 
-            if (initializer is not null)
+            if (initializer.Item1 is not null)
             {
-                var initializerType = AnalyzeExpression(initializer);
-                if (!type.CanHold(initializerType))
+                if (!type.CanHold(initializer.Item1))
                 {
-                    if (initializerType is NilType)
+                    if (initializer.Item1 is NilType)
                         _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                     else
-                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializerType}' is incompatible with the declared type of '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializer.Item1}' is incompatible with the declared type of '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                 }
             }
             else
@@ -199,7 +200,7 @@ public class SemanticAnalyzer
             return;
         }
 
-        var valueType = AnalyzeExpression(assignment.value);
+        var valueType = AnalyzeExpression(assignment.value).FirstOrDefault() ?? NilType;
         if (variableType.CanHold(valueType))
             return;
 
@@ -221,7 +222,7 @@ public class SemanticAnalyzer
         return type;
     }
 
-    private Type AnalyzeExpression(Expression expression)
+    private List<Type> AnalyzeExpression(Expression expression)
     {
         return expression switch
         {
@@ -234,82 +235,83 @@ public class SemanticAnalyzer
         };
     }
 
-    private Type AnalyzeUnaryOperation(UnaryOperation unaryOperation)
+    private List<Type> AnalyzeUnaryOperation(UnaryOperation unaryOperation)
     {
-        var expressionType = AnalyzeExpression(unaryOperation.expression);
+        var expressionType = AnalyzeExpression(unaryOperation.expression).FirstOrDefault() ?? NilType;
         var resultType = expressionType.ResolveUnaryOperation(unaryOperation.op);
         if (resultType != null)
-            return resultType;
+            return [resultType];
 
         _reporter.Report(new Diagnostic(TypeErrors.UnsupportedUnaryOperation, $"Cannot perform unary operation '{unaryOperation.op}' on type '{expressionType}'", DiagnosticSeverity.Error, unaryOperation.source));
-        return UnknownType;
+        return [UnknownType];
     }
 
-    private Type AnalyzeBinaryOperation(BinaryOperation binaryOperation)
+    private List<Type> AnalyzeBinaryOperation(BinaryOperation binaryOperation)
     {
         if (IsTernaryPattern(binaryOperation, out var expressionA, out var expressionB))
         {
-            var typeA = AnalyzeExpression(expressionA);
-            var typeB = AnalyzeExpression(expressionB);
             AnalyzeExpression(binaryOperation.left);
 
+            var typeA = AnalyzeExpression(expressionA).FirstOrDefault() ?? NilType;
+            var typeB = AnalyzeExpression(expressionB).FirstOrDefault() ?? NilType;
 
             var ternaryResultType = Type.GetCommonType(typeA, typeB);
             if (ternaryResultType != null)
-                return ternaryResultType;
+                return [ternaryResultType];
 
             _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, $"Ternary results have incompatible types '{typeA}' and '{typeB}'", DiagnosticSeverity.Error, binaryOperation.source));
-            return UnknownType;
+            return [UnknownType];
         }
 
-        var leftType = AnalyzeExpression(binaryOperation.left);
-        var rightType = AnalyzeExpression(binaryOperation.right);
+        var leftType = AnalyzeExpression(binaryOperation.left).FirstOrDefault() ?? NilType;
+        var rightType = AnalyzeExpression(binaryOperation.right).FirstOrDefault() ?? NilType;
 
         var resultType = leftType.ResolveBinaryOperation(binaryOperation.op, rightType);
         if (resultType != null)
-            return resultType;
+            return [resultType];
 
         _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot perform binary operation '{binaryOperation.op}' on types '{leftType}' and '{rightType}'", DiagnosticSeverity.Error, binaryOperation.source));
-        return UnknownType;
+        return [UnknownType];
     }
 
-    private Type AnalyzeLiteral(Literal literal)
+    private List<Type> AnalyzeLiteral(Literal literal)
     {
         return literal.kind switch
         {
-            LiteralKind.Number => NumberType,
-            LiteralKind.String => StringType,
-            LiteralKind.Boolean => BooleanType,
-            LiteralKind.Nil => NilType,
+            LiteralKind.Number => [NumberType],
+            LiteralKind.String => [StringType],
+            LiteralKind.Boolean => [BooleanType],
+            LiteralKind.Nil => [NilType],
             _ => throw new SwitchExpressionException(literal.kind)
         };
     }
 
-    private Type AnalyzeVariableReference(VariableReference variableReference)
+    private List<Type> AnalyzeVariableReference(VariableReference variableReference)
     {
         var type = _local.GetType(variableReference.name);
         if (type != null)
-            return type;
+            return [type];
 
         _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variableReference.name}' does not exist in the current context", DiagnosticSeverity.Error, variableReference.source));
-        return UnknownType;
+        return [UnknownType];
     }
 
-    private Type AnalyzeFunctionCall(FunctionCall functionCall)
+    private List<Type> AnalyzeFunctionCall(FunctionCall functionCall)
     {
-        var prefixType = AnalyzeExpression(functionCall.function);
+        var prefixType = AnalyzeExpression(functionCall.function).FirstOrDefault() ?? NilType;
         if (prefixType is not FunctionType functionType)
         {
             // TODO: Error code for call on a non function call
-            _reporter.Report(new Diagnostic("0", $"Attempt to call a value of type '{prefixType}'", DiagnosticSeverity.Error, functionCall.source));
-            return UnknownType;
+            _reporter.Report(new Diagnostic("0", $"Attempt to call a '{prefixType}' value", DiagnosticSeverity.Error, functionCall.source));
+            return [UnknownType];
         }
+
+        var argumentTypes = ExpandExpressionList(functionCall.arguments);
 
         for (var i = 0; i < functionType.ParameterTypes.Count; i++)
         {
             var parameterType = functionType.ParameterTypes[i];
-
-            if (i >= functionCall.arguments.Count)
+            if (i >= argumentTypes.Count)
             {
                 if (!parameterType.Nullable)
                     // TODO: Error code for missing argument
@@ -317,15 +319,13 @@ public class SemanticAnalyzer
             }
             else
             {
-                var argument = functionCall.arguments[i];
-                var argumentType = AnalyzeExpression(argument);
-                if (!parameterType.CanHold(argumentType))
-                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Argument #{i + 1} expected '{parameterType}' but got '{argumentType}'", DiagnosticSeverity.Error, argument.source));
+                var argument = argumentTypes[i];
+                if (!parameterType.CanHold(argument.Item1))
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Argument #{i + 1} expected '{parameterType}' but got '{argument.Item1}'", DiagnosticSeverity.Error, argument.Item2));
             }
         }
 
-        // TODO: Figure out how to return multiple values or "nothing"
-        return UnknownType;
+        return functionType.ReturnTypes.ToList();
     }
 
     private bool IsTernaryPattern(BinaryOperation binaryOperation, [NotNullWhen(true)] out Expression? valueA, [NotNullWhen(true)] out Expression? valueB)
@@ -342,5 +342,21 @@ public class SemanticAnalyzer
         valueA = leftBinaryOperation.right;
         valueB = binaryOperation.right;
         return true;
+    }
+
+    private List<(Type, Source)> ExpandExpressionList(List<Expression> expressions)
+    {
+        var results = new List<(Type, Source)>();
+
+        for (var i = 0; i < expressions.Count; i++)
+        {
+            var types = AnalyzeExpression(expressions[i]);
+            if (i == expressions.Count - 1)
+                results.AddRange(types.Select(t => (t, expressions[i].source)));
+            else
+                results.Add((types.ElementAtOrDefault(0) ?? NilType, expressions[i].source));
+        }
+
+        return results;
     }
 }
