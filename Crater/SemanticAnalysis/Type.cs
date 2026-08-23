@@ -84,6 +84,9 @@ public abstract class Type
 
     public virtual Type? ResolveBinaryOperation(string op, Type other)
     {
+        if (op is "==" or "~=")
+            return SemanticAnalyzer.BooleanType;
+
         if (other is UnknownType)
             return other;
 

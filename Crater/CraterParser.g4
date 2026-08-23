@@ -48,6 +48,7 @@ expression
     | op=(MINUS | NOT) expression                               # UnaryExpression
     | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
+    | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
     | NUMBER                                                    # NumberLiteral
@@ -63,3 +64,12 @@ prefixExpression: IDENTIFIER # VariableReference;
 postfixExpression: postfixFunctionCall;
 
 postfixFunctionCall: LPAREN expressionList? RPAREN;
+
+logicalOperator
+    : EQUAL
+    | NOT_EQUAL
+    | LESSER
+    | GREATER
+    | LESSER_EQUAL
+    | GREATER_EQUAL
+    ;

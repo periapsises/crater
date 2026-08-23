@@ -2,6 +2,9 @@ namespace Crater.SemanticAnalysis.Types;
 
 public class NumberType(bool nullable = false) : Type("number", null, nullable)
 {
+    private static readonly HashSet<string> Operators = ["+", "-", "*", "/", "<", ">", "<=", ">="];
+    private static readonly HashSet<string> ArithmeticOperators = ["+", "-", "*", "/"];
+
     public override Type? ResolveUnaryOperation(string op)
     {
         if (op == "-")
@@ -16,16 +19,19 @@ public class NumberType(bool nullable = false) : Type("number", null, nullable)
         if (baseResult != null)
             return baseResult;
 
-        if (op is not ("+" or "-" or "*" or "/"))
+        if (!Operators.Contains(op))
             return null;
 
         if (Nullable || other.Nullable)
             return null;
 
-        if (other is NumberType)
+        if (other is not NumberType)
+            return null;
+
+        if (ArithmeticOperators.Contains(op))
             return this;
 
-        return null;
+        return SemanticAnalyzer.BooleanType;
     }
 
     public override Type GetNullable() => new NumberType(true);

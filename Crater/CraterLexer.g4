@@ -33,12 +33,19 @@ VOID    : 'void';
 // ==================================================
 
 // Multi-Character
+EQUAL           : '==';
+NOT_EQUAL       : '~=';
+LESSER_EQUAL    : '<=';
+GREATER_EQUAL   : '>=';
 
 // Single-Character
 PLUS    : '+';
 MINUS   : '-';
 STAR    : '*';
 SLASH   : '/';
+
+LESSER  : '<';
+GREATER : '>';
 
 COMMA   : ',';
 COLON   : ':';

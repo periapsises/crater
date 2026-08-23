@@ -201,6 +201,15 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return new BinaryOperation(left, op, right, Source.FromContext(context));
     }
 
+    public override object VisitLogicalOperation(CraterParser.LogicalOperationContext context)
+    {
+        var left = Get<Expression>(context.left);
+        var right = Get<Expression>(context.right);
+        var op = context.logicalOperator().GetText();
+
+        return new BinaryOperation(left, op, right, Source.FromContext(context));
+    }
+
     public override object VisitAndOperation(CraterParser.AndOperationContext context)
     {
         var left = Get<Expression>(context.left);
