@@ -34,6 +34,9 @@ public class Compiler
                 case VariableDeclaration variableDeclaration:
                     CompileVariableDeclaration(variableDeclaration);
                     break;
+                case FunctionDeclaration functionDeclaration:
+                    CompileFunctionDeclaration(functionDeclaration);
+                    break;
                 case DoStatement doStatement:
                     CompileDoStatement(doStatement);
                     break;
@@ -70,6 +73,30 @@ public class Compiler
         }
 
         _writer.WriteLine();
+    }
+
+    private void CompileFunctionDeclaration(FunctionDeclaration functionDeclaration)
+    {
+        if (functionDeclaration.local)
+            _writer.Write("local ");
+
+        _writer.Write($"function {functionDeclaration.name}(");
+
+        var parameterCount = functionDeclaration.parameters.Count;
+        for (var i = 0; i < parameterCount; i++)
+        {
+            _writer.Write(functionDeclaration.parameters[i].name);
+            if (i < parameterCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.WriteLine(")");
+
+        _writer.Indent();
+        CompileBlock(functionDeclaration.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
     }
 
     private void CompileDoStatement(DoStatement doStatement)
