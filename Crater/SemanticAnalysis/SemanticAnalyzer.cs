@@ -16,6 +16,7 @@ public class SemanticAnalyzer
 
     private readonly Dictionary<string, Type> _types;
 
+    public static readonly Type AnyType = new AnyType();
     public static readonly Type NumberType = new NumberType();
     public static readonly Type StringType = new StringType();
     public static readonly Type BooleanType = new BooleanType();
@@ -28,6 +29,7 @@ public class SemanticAnalyzer
 
         _types = new Dictionary<string, Type>()
         {
+            { "any", AnyType },
             { "number", NumberType },
             { "string", StringType },
             { "bool", BooleanType }

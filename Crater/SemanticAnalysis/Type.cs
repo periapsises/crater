@@ -26,6 +26,9 @@ public abstract class Type
         if (other is NilType)
             return Nullable;
 
+        if (this is AnyType)
+            return true;
+
         return other.IsSubtypeOf(this);
     }
 
