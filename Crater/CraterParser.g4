@@ -29,7 +29,7 @@ returnTypes: VOID | typeName (COMMA typeName)*;
 
 doStatement: DO block END;
 
-ifStatement: IF expression THEN block (elseIfStatement)* elseStatement END;
+ifStatement: IF expression THEN block (elseIfStatement)* elseStatement? END;
 
 elseIfStatement: ELSEIF expression THEN block;
 
