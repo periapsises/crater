@@ -88,6 +88,9 @@ public class Compiler
             case Literal literal:
                 CompileLiteral(literal);
                 break;
+            case VariableReference variableReference:
+                CompileVariableReference(variableReference);
+                break;
             default:
                 throw new SwitchExpressionException(expression);
         }
@@ -96,5 +99,10 @@ public class Compiler
     private void CompileLiteral(Literal literal)
     {
         _writer.Write(literal.value);
+    }
+
+    private void CompileVariableReference(VariableReference variableReference)
+    {
+        _writer.Write(variableReference.name);
     }
 }
