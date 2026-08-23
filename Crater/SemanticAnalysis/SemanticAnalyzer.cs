@@ -225,22 +225,13 @@ public class SemanticAnalyzer
     {
         return expression switch
         {
-            VariableReference variableReference => AnalyzeVariableReference(variableReference),
             UnaryOperation unaryOperation => AnalyzeUnaryOperation(unaryOperation),
             BinaryOperation binaryOperation => AnalyzeBinaryOperation(binaryOperation),
             Literal literal => AnalyzeLiteral(literal),
+            VariableReference variableReference => AnalyzeVariableReference(variableReference),
+            FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
             _ => throw new SwitchExpressionException(expression)
         };
-    }
-
-    private Type AnalyzeVariableReference(VariableReference variableReference)
-    {
-        var type = _local.GetType(variableReference.name);
-        if (type != null)
-            return type;
-
-        _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variableReference.name}' does not exist in the current context", DiagnosticSeverity.Error, variableReference.source));
-        return UnknownType;
     }
 
     private Type AnalyzeUnaryOperation(UnaryOperation unaryOperation)
@@ -290,6 +281,49 @@ public class SemanticAnalyzer
             LiteralKind.Nil => NilType,
             _ => throw new SwitchExpressionException(literal.kind)
         };
+    }
+
+    private Type AnalyzeVariableReference(VariableReference variableReference)
+    {
+        var type = _local.GetType(variableReference.name);
+        if (type != null)
+            return type;
+
+        _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variableReference.name}' does not exist in the current context", DiagnosticSeverity.Error, variableReference.source));
+        return UnknownType;
+    }
+
+    private Type AnalyzeFunctionCall(FunctionCall functionCall)
+    {
+        var prefixType = AnalyzeExpression(functionCall.function);
+        if (prefixType is not FunctionType functionType)
+        {
+            // TODO: Error code for call on a non function call
+            _reporter.Report(new Diagnostic("0", $"Attempt to call a value of type '{prefixType}'", DiagnosticSeverity.Error, functionCall.source));
+            return UnknownType;
+        }
+
+        for (var i = 0; i < functionType.ParameterTypes.Count; i++)
+        {
+            var parameterType = functionType.ParameterTypes[i];
+
+            if (i >= functionCall.arguments.Count)
+            {
+                if (!parameterType.Nullable)
+                    // TODO: Error code for missing argument
+                    _reporter.Report(new Diagnostic("0", $"Missing argument #{i + 1}. Expecting '{parameterType}'", DiagnosticSeverity.Error, functionCall.source));
+            }
+            else
+            {
+                var argument = functionCall.arguments[i];
+                var argumentType = AnalyzeExpression(argument);
+                if (!parameterType.CanHold(argumentType))
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Argument #{i + 1} expected '{parameterType}' but got '{argumentType}'", DiagnosticSeverity.Error, argument.source));
+            }
+        }
+
+        // TODO: Figure out how to return multiple values or "nothing"
+        return UnknownType;
     }
 
     private bool IsTernaryPattern(BinaryOperation binaryOperation, [NotNullWhen(true)] out Expression? valueA, [NotNullWhen(true)] out Expression? valueB)

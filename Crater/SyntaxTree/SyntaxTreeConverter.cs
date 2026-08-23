@@ -163,12 +163,6 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return expressions;
     }
 
-    public override object VisitVariableReference(CraterParser.VariableReferenceContext context)
-    {
-        var name = context.IDENTIFIER().GetText();
-        return new VariableReference(name, Source.FromContext(context));
-    }
-
     public override object VisitUnaryExpression(CraterParser.UnaryExpressionContext context)
     {
         var op = context.op.Text;
@@ -231,5 +225,37 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
     public override object VisitNilLiteral(CraterParser.NilLiteralContext context)
     {
         return new Literal(context.GetText(), LiteralKind.Nil, Source.FromContext(context));
+    }
+
+    public override object VisitPrimaryExpression(CraterParser.PrimaryExpressionContext context)
+    {
+        var expression = Get<Expression>(context.prefixExpression());
+        foreach (var postfixExpressionContext in context.postfixExpression())
+            expression = BuildPostfixExpression(postfixExpressionContext, expression);
+
+        return expression;
+    }
+
+    public override object VisitVariableReference(CraterParser.VariableReferenceContext context)
+    {
+        var name = context.IDENTIFIER().GetText();
+        return new VariableReference(name, Source.FromContext(context));
+    }
+
+    private Expression BuildPostfixExpression(CraterParser.PostfixExpressionContext context, Expression prefix)
+    {
+        if (context.postfixFunctionCall() is { } postfixFunctionCallContext)
+            return BuildPostfixFunctionCall(postfixFunctionCallContext, prefix);
+
+        throw new InvalidOperationException($"Unsupported postfix expression type: {context.GetText()}");
+    }
+
+    private FunctionCall BuildPostfixFunctionCall(CraterParser.PostfixFunctionCallContext context, Expression prefix)
+    {
+        if (context.expressionList() == null)
+            return new FunctionCall(prefix, [], Source.FromContext(context));
+
+        var arguments = Get<List<Expression>>(context.expressionList());
+        return new FunctionCall(prefix, arguments, Source.FromContext(context));
     }
 }

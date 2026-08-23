@@ -37,6 +37,8 @@ public abstract record Expression(Source source) : Node(source);
 
 public sealed record VariableReference(string name, Source source) : Expression(source);
 
+public sealed record FunctionCall(Expression function, List<Expression> arguments, Source source) : Expression(source);
+
 public sealed record UnaryOperation(string op, Expression expression, Source source) : Expression(source);
 
 public sealed record BinaryOperation(Expression left, string op, Expression right, Source source) : Expression(source);

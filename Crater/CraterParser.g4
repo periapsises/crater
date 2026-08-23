@@ -41,7 +41,7 @@ typeName: IDENTIFIER QMARK?;
 expressionList: expression (COMMA expression)*;
 
 expression
-    : IDENTIFIER                                                # VariableReference
+    : primaryExpression                                         # BaseExpression
     | op=(MINUS | NOT) expression                               # UnaryExpression
     | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
@@ -52,3 +52,11 @@ expression
     | (TRUE | FALSE)                                            # BooleanLiteral
     | NIL                                                       # NilLiteral
     ;
+
+primaryExpression: prefixExpression postfixExpression*;
+
+prefixExpression: IDENTIFIER # VariableReference;
+
+postfixExpression: postfixFunctionCall;
+
+postfixFunctionCall: LPAREN expressionList? RPAREN;
