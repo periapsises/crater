@@ -40,6 +40,9 @@ public class Compiler
                 case DoStatement doStatement:
                     CompileDoStatement(doStatement);
                     break;
+                case IfStatement ifStatement:
+                    CompileIfStatement(ifStatement);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -105,6 +108,38 @@ public class Compiler
         _writer.Indent();
         CompileBlock(doStatement.block);
         _writer.Outdent();
+        _writer.WriteLine("end");
+    }
+
+    private void CompileIfStatement(IfStatement ifStatement)
+    {
+        _writer.Write("if ");
+        CompileExpression(ifStatement.condition);
+        _writer.WriteLine(" then");
+
+        _writer.Indent();
+        CompileBlock(ifStatement.block);
+        _writer.Outdent();
+
+        foreach (var elseIfStatement in ifStatement.elseIfStatements)
+        {
+            _writer.Write("elseif ");
+            CompileExpression(elseIfStatement.condition);
+            _writer.WriteLine(" then");
+
+            _writer.Indent();
+            CompileBlock(elseIfStatement.block);
+            _writer.Outdent();
+        }
+
+        if (ifStatement.elseStatement is not null)
+        {
+            _writer.WriteLine("else");
+            _writer.Indent();
+            CompileBlock(ifStatement.elseStatement.block);
+            _writer.Outdent();
+        }
+
         _writer.WriteLine("end");
     }
 
