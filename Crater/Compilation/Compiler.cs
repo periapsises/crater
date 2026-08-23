@@ -97,6 +97,9 @@ public class Compiler
             case VariableReference variableReference:
                 CompileVariableReference(variableReference);
                 break;
+            case FunctionCall functionCall:
+                CompileFunctionCall(functionCall);
+                break;
             default:
                 throw new SwitchExpressionException(expression);
         }
@@ -123,5 +126,21 @@ public class Compiler
     private void CompileVariableReference(VariableReference variableReference)
     {
         _writer.Write(variableReference.name);
+    }
+
+    private void CompileFunctionCall(FunctionCall functionCall)
+    {
+        CompileExpression(functionCall.function);
+        _writer.Write("(");
+
+        var argumentCount = functionCall.arguments.Count;
+        for (var i = 0; i < argumentCount; i++)
+        {
+            CompileExpression(functionCall.arguments[i]);
+            if (i < argumentCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write(")");
     }
 }
