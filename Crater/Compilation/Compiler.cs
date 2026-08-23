@@ -48,8 +48,28 @@ public class Compiler
         if (variableDeclaration.local)
             _writer.Write("local ");
 
-        foreach (var declarator in variableDeclaration.declarators)
-            _writer.WriteLine(declarator.name);
+        var declaratorCount = variableDeclaration.declarators.Count;
+        for (var i = 0; i < declaratorCount; i++)
+        {
+            _writer.Write(variableDeclaration.declarators[i].name);
+            if (i < declaratorCount - 1)
+                _writer.Write(", ");
+        }
+
+        var initializerCount = variableDeclaration.initializers.Count;
+        if (initializerCount == 0)
+            return;
+
+        _writer.Write(" = ");
+
+        for (var i = 0; i < initializerCount; i++)
+        {
+            CompileExpression(variableDeclaration.initializers[i]);
+            if (i < initializerCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.WriteLine();
     }
 
     private void CompileDoStatement(DoStatement doStatement)
@@ -59,5 +79,22 @@ public class Compiler
         CompileBlock(doStatement.block);
         _writer.Outdent();
         _writer.WriteLine("end");
+    }
+
+    private void CompileExpression(Expression expression)
+    {
+        switch (expression)
+        {
+            case Literal literal:
+                CompileLiteral(literal);
+                break;
+            default:
+                throw new SwitchExpressionException(expression);
+        }
+    }
+
+    private void CompileLiteral(Literal literal)
+    {
+        _writer.Write(literal.value);
     }
 }

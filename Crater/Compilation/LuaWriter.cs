@@ -29,7 +29,7 @@ public class LuaWriter
         _builder.Append(text);
     }
 
-    public void WriteLine(string text)
+    public void WriteLine(string? text = null)
     {
         ApplyIndent();
         _builder.AppendLine(text);
