@@ -43,6 +43,9 @@ public class Compiler
                 case IfStatement ifStatement:
                     CompileIfStatement(ifStatement);
                     break;
+                case Assignment assignment:
+                    CompileAssignment(assignment);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -141,6 +144,32 @@ public class Compiler
         }
 
         _writer.WriteLine("end");
+    }
+
+    private void CompileAssignment(Assignment assignment)
+    {
+        var variableCount = assignment.variables.Count;
+        for (var i = 0; i < variableCount; i++)
+        {
+            _writer.Write(assignment.variables[i]);
+            if (i < variableCount - 1)
+                _writer.Write(", ");
+        }
+
+        var valueCount = assignment.values.Count;
+        if (valueCount == 0)
+            return;
+
+        _writer.Write(" = ");
+
+        for (var i = 0; i < valueCount; i++)
+        {
+            CompileExpression(assignment.values[i]);
+            if (i < valueCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.WriteLine();
     }
 
     private void CompileExpression(Expression expression)
