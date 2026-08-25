@@ -1,0 +1,59 @@
+name: .NET Build & Test
+
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+
+permissions:
+    contents: read
+    actions: read
+    checks: write
+
+jobs:
+    build-and-test:
+        name: Build & Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Setup Java JDK
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '21'
+                  distribution: 'temurin'
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '9.0.x'
+
+            - name: Download ANTLR Jar
+              run: |
+                  curl -sSL https://www.antlr.org/download/antlr-4.13.2-complete.jar -o antlr-4.13.2-complete.jar
+
+            - name: Generate ANTLR Code
+              run: |
+                  java -jar antlr-4.13.2-complete.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
+
+            - name: Restore dependencies
+              run: dotnet restore
+
+            - name: Build project
+              run: dotnet build --no-restore --configuration Release
+
+            - name: Run tests
+              run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+              continue-on-error: true
+
+            - name: Publish Test Report
+              uses: dorny/test-reporter@v3
+              if: ${{ !cancelled() }}
+              with:
+                  name: .NET Test Results
+                  path: "**/TestResults/test-results.trx"
+                  reporter: dotnet-trx
+                  fail-on-error: "true"

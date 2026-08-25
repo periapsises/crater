@@ -2,62 +2,32 @@ using Crater.SemanticAnalysis.Types;
 
 namespace Crater.SemanticAnalysis;
 
-public abstract class Type
+public abstract class Type(string name, Type? baseType = null)
 {
-    public readonly string Name;
-    public readonly Type? BaseType;
-    public readonly bool Nullable;
+    protected readonly string Name = name;
 
-    protected Type(string name, Type? baseType = null, bool nullable = false)
-    {
-        Name = name;
-        BaseType = baseType;
-        Nullable = nullable;
-    }
+    public readonly Type? BaseType = baseType;
 
-    public bool CanHold(Type other)
+    public virtual string GetName() => Name;
+
+    public virtual bool CanHold(Type other)
     {
-        if (this is UnknownType || other is UnknownType)
+        if (other is UnknownType)
             return true;
 
-        if (!Nullable && other.Nullable)
-            return false;
-
-        if (other is NilType)
-            return Nullable;
-
-        if (this is AnyType)
+        if (GetType() == other.GetType())
             return true;
 
-        return other.IsSubtypeOf(this);
-    }
-
-    private bool IsSubtypeOf(Type target)
-    {
-        var current = this;
-        while (current != null)
-        {
-            if (current.IsSameTypeAs(target))
-                return true;
-
-            current = current.BaseType;
-        }
-
-        return false;
-    }
-
-    protected virtual bool IsSameTypeAs(Type other)
-    {
-        return Name == other.Name;
+        return other.BaseType != null && CanHold(other.BaseType);
     }
 
     public static Type? GetCommonType(Type left, Type right)
     {
         if (left is UnknownType || right is UnknownType)
-            return new UnknownType();
+            return TypeRegistry.UnknownType;
 
-        var leftNonNullable = left.Nullable ? left.GetNonNullable() : left;
-        var rightNonNullable = right.Nullable ? right.GetNonNullable() : right;
+        var leftNonNullable = left is NullableType nullableLeftType ? nullableLeftType.InnerType : left;
+        var rightNonNullable = right is NullableType nullableRightType ? nullableRightType.InnerType : right;
 
         var currentAncestor = leftNonNullable;
         Type? matchedType = null;
@@ -76,19 +46,19 @@ public abstract class Type
         if (matchedType == null)
             return null;
 
-        var nullable = left.Nullable || right.Nullable;
-        return nullable ? matchedType.GetNullable() : matchedType.GetNonNullable();
+        var nullable = left is NullableType || right is NullableType;
+        return nullable ? new NullableType(matchedType) : matchedType;
     }
 
     public virtual Type? ResolveUnaryOperation(string op)
     {
-        return op == "not" ? SemanticAnalyzer.BooleanType : null;
+        return op == "not" ? TypeRegistry.BooleanType : null;
     }
 
     public virtual Type? ResolveBinaryOperation(string op, Type other)
     {
         if (op is "==" or "~=")
-            return SemanticAnalyzer.BooleanType;
+            return TypeRegistry.BooleanType;
 
         if (other is UnknownType)
             return other;
@@ -101,34 +71,29 @@ public abstract class Type
         };
     }
 
-    protected Type? ResolveLogicalOr(Type other)
+    private Type? ResolveLogicalOr(Type other)
     {
         var common = GetCommonType(this, other);
         if (common == null)
             return null;
 
-        var nullable = Nullable && other.Nullable;
-        return nullable ? common.GetNullable() : common.GetNonNullable();
+        if (this is NullableType && other is NullableType)
+            return common is NullableType ? common : new NullableType(common);
+
+        return common is NullableType nullableCommon ? nullableCommon.InnerType : common;
     }
 
-    protected Type? ResolveLogicalAnd(Type other)
+    private Type? ResolveLogicalAnd(Type other)
     {
         var common = GetCommonType(this, other);
         if (common == null)
             return null;
 
-        var nullable = Nullable || other.Nullable;
-        return nullable ? common.GetNullable() : common.GetNonNullable();
+        if (this is NullableType || other is NullableType)
+            return common is NullableType ? common : new NullableType(common);
+
+        return common is NullableType nullableCommon ? nullableCommon.InnerType : common;
     }
 
-    public abstract Type GetNullable();
-    public abstract Type GetNonNullable();
-
-    public override string ToString()
-    {
-        if (Nullable)
-            return Name + "?";
-
-        return Name;
-    }
+    public override string ToString() => GetName();
 }

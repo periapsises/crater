@@ -1,41 +1,44 @@
 namespace Crater.SemanticAnalysis.Types;
 
-public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes, bool nullable = false) : Type(BuildSignature(parameterTypes, returnTypes), null, nullable)
+public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes, Type baseType) : Type(BuildSignature(parameterTypes, returnTypes), baseType)
 {
     public readonly IReadOnlyList<Type> ParameterTypes = parameterTypes;
     public readonly IReadOnlyList<Type> ReturnTypes = returnTypes;
 
-    protected override bool IsSameTypeAs(Type other)
+    public override bool CanHold(Type other)
     {
-        if (other is not FunctionType func)
+        if (other is not FunctionType otherFunction)
             return false;
 
-        if (ParameterTypes.Count != func.ParameterTypes.Count)
+        if (BaseType == TypeRegistry.AnyType)
+            return true;
+
+        if (ParameterTypes.Count != otherFunction.ParameterTypes.Count)
             return false;
 
-        if (ReturnTypes.Count != func.ReturnTypes.Count)
+        if (ReturnTypes.Count != otherFunction.ReturnTypes.Count)
             return false;
 
         for (var i = 0; i < ParameterTypes.Count; i++)
         {
-            if (!ParameterTypes[i].CanHold(func.ParameterTypes[i]))
+            if (!ParameterTypes[i].CanHold(otherFunction.ParameterTypes[i]))
                 return false;
         }
 
         for (var i = 0; i < ReturnTypes.Count; i++)
         {
-            if (!func.ReturnTypes[i].CanHold(ReturnTypes[i]))
+            if (!otherFunction.ReturnTypes[i].CanHold(ReturnTypes[i]))
                 return false;
         }
 
         return true;
     }
 
-    public override Type GetNullable() => new FunctionType(ParameterTypes, ReturnTypes, true);
-    public override Type GetNonNullable() => new FunctionType(ParameterTypes, ReturnTypes);
-
     private static string BuildSignature(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes)
     {
+        if (parameterTypes.Count == 0 && returnTypes.Count == 0)
+            return "function";
+
         var parameters = string.Join(", ", parameterTypes);
         var returns = returnTypes.Count == 0 ? "void" : string.Join(", ", returnTypes);
 

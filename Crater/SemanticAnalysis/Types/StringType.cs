@@ -1,7 +1,5 @@
 namespace Crater.SemanticAnalysis.Types;
 
-public class StringType(bool nullable = false) : Type("string", null, nullable)
+public class StringType(Type baseType) : Type("string", baseType)
 {
-    public override Type GetNullable() => new StringType(true);
-    public override Type GetNonNullable() => new StringType();
 }
