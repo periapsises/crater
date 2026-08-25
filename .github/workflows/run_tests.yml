@@ -1,0 +1,45 @@
+name: .NET Build & Test
+
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+
+permissions:
+    contents: read
+    actions: read
+    checks: write
+
+jobs:
+    build-and-test:
+        name: Build & Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '9.0.x'
+
+            - name: Restore dependencies
+              run: dotnet restore
+
+            - name: Build project
+              run: dotnet build --no-restore --configuration Release
+
+            - name: Run tests
+              run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+              continue-on-error: true
+
+            - name: Publish Test Report
+              uses: dorny/test-reporter@v3
+              if: ${{ !cancelled() }}
+              with:
+                  name: .NET Test Results
+                  path: "**/TestResults/test-results.trx"
+                  reporter: dotnet-trx
+                  fail-on-error: "true"
