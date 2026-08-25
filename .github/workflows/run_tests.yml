@@ -20,10 +20,24 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
+            - name: Setup Java JDK
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '21'
+                  distribution: 'temurin'
+
             - name: Setup .NET
               uses: actions/setup-dotnet@v4
               with:
                   dotnet-version: '9.0.x'
+
+            - name: Download ANTLR Jar
+              run: |
+                  curl -sSL https://www.antlr.org/download/antlr-4.13.2-complete.jar -o antlr-4.13.2-complete.jar
+
+            - name: Generate ANTLR Code
+              run: |
+                  java -jar antlr-4.13.2-complete.jar -Dlanguage=CSharp -package Crater.Antlr -message-format antlr -no-listener -visitor -o Crater/Antlr -Xexact-output-dir ./Crater/CraterLexer.g4 ./Crater/CraterParser.g4
 
             - name: Restore dependencies
               run: dotnet restore
