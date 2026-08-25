@@ -7,6 +7,9 @@ public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type
 
     private static string BuildSignature(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes)
     {
+        if (parameterTypes.Count == 0 && returnTypes.Count == 0)
+            return "function";
+
         var parameters = string.Join(", ", parameterTypes);
         var returns = returnTypes.Count == 0 ? "void" : string.Join(", ", returnTypes);
 

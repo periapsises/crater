@@ -135,7 +135,7 @@ public class SemanticAnalyzer
         foreach (var returnType in functionDeclaration.returnTypes)
             returnTypes.Add(AnalyzeTypeName(returnType));
 
-        env.Define(functionDeclaration.name, new FunctionType(parameterTypes, returnTypes, TypeRegistry.AnyType));
+        env.Define(functionDeclaration.name, new FunctionType(parameterTypes, returnTypes, TypeRegistry.FunctionType));
 
         EnterScope();
 
