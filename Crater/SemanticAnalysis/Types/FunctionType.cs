@@ -5,6 +5,35 @@ public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type
     public readonly IReadOnlyList<Type> ParameterTypes = parameterTypes;
     public readonly IReadOnlyList<Type> ReturnTypes = returnTypes;
 
+    public override bool CanHold(Type other)
+    {
+        if (other is not FunctionType otherFunction)
+            return false;
+
+        if (BaseType == TypeRegistry.AnyType)
+            return true;
+
+        if (ParameterTypes.Count != otherFunction.ParameterTypes.Count)
+            return false;
+
+        if (ReturnTypes.Count != otherFunction.ReturnTypes.Count)
+            return false;
+
+        for (var i = 0; i < ParameterTypes.Count; i++)
+        {
+            if (!ParameterTypes[i].CanHold(otherFunction.ParameterTypes[i]))
+                return false;
+        }
+
+        for (var i = 0; i < ReturnTypes.Count; i++)
+        {
+            if (!otherFunction.ReturnTypes[i].CanHold(ReturnTypes[i]))
+                return false;
+        }
+
+        return true;
+    }
+
     private static string BuildSignature(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes)
     {
         if (parameterTypes.Count == 0 && returnTypes.Count == 0)
