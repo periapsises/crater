@@ -1,6 +1,6 @@
 namespace Crater.SemanticAnalysis.Types;
 
-public class NumberType(bool nullable = false) : Type("number", null, nullable)
+public class NumberType(Type baseType) : Type("number", baseType)
 {
     private static readonly HashSet<string> Operators = ["+", "-", "*", "/", "<", ">", "<=", ">="];
     private static readonly HashSet<string> ArithmeticOperators = ["+", "-", "*", "/"];
@@ -19,21 +19,18 @@ public class NumberType(bool nullable = false) : Type("number", null, nullable)
         if (baseResult != null)
             return baseResult;
 
-        if (!Operators.Contains(op))
-            return null;
-
-        if (Nullable || other.Nullable)
+        if (other is NullableType)
             return null;
 
         if (other is not NumberType)
             return null;
 
+        if (!Operators.Contains(op))
+            return null;
+
         if (ArithmeticOperators.Contains(op))
             return this;
 
-        return SemanticAnalyzer.BooleanType;
+        return TypeRegistry.BooleanType;
     }
-
-    public override Type GetNullable() => new NumberType(true);
-    public override Type GetNonNullable() => new NumberType();
 }
