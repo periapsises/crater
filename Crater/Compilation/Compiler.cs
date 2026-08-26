@@ -206,8 +206,20 @@ public class Compiler
             case BinaryOperation binaryOperation:
                 CompileBinaryOperation(binaryOperation);
                 break;
-            case Literal literal:
-                CompileLiteral(literal);
+            case NumberLiteral numberLiteral:
+                CompileNumberLiteral(numberLiteral);
+                break;
+            case StringLiteral stringLiteral:
+                CompileStringLiteral(stringLiteral);
+                break;
+            case BooleanLiteral booleanLiteral:
+                CompileBooleanLiteral(booleanLiteral);
+                break;
+            case ArrayLiteral arrayLiteral:
+                CompileArrayLiteral(arrayLiteral);
+                break;
+            case NilLiteral nilLiteral:
+                CompileNilLiteral(nilLiteral);
                 break;
             case VariableReference variableReference:
                 CompileVariableReference(variableReference);
@@ -233,9 +245,39 @@ public class Compiler
         CompileExpression(binaryOperation.right);
     }
 
-    private void CompileLiteral(Literal literal)
+    private void CompileNumberLiteral(NumberLiteral numberLiteral)
     {
-        _writer.Write(literal.value);
+        _writer.Write(numberLiteral.value);
+    }
+
+    private void CompileStringLiteral(StringLiteral stringLiteral)
+    {
+        _writer.Write(stringLiteral.value);
+    }
+
+    private void CompileBooleanLiteral(BooleanLiteral booleanLiteral)
+    {
+        _writer.Write(booleanLiteral.value);
+    }
+
+    private void CompileArrayLiteral(ArrayLiteral arrayLiteral)
+    {
+        _writer.Write("{");
+
+        for (var i = 0; i < arrayLiteral.values.Count; i++)
+        {
+            CompileExpression(arrayLiteral.values[i]);
+
+            if (i < arrayLiteral.values.Count - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write("}");
+    }
+
+    private void CompileNilLiteral(NilLiteral nilLiteral)
+    {
+        _writer.Write(nilLiteral.value);
     }
 
     private void CompileVariableReference(VariableReference variableReference)

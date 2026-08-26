@@ -53,6 +53,7 @@ expression
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
+    | LBRACKET expressionList? RBRACKET                         # ArrayLiteral
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
     | (TRUE | FALSE)                                            # BooleanLiteral

@@ -295,7 +295,11 @@ public class SemanticAnalyzer
         {
             UnaryOperation unaryOperation => AnalyzeUnaryOperation(unaryOperation),
             BinaryOperation binaryOperation => AnalyzeBinaryOperation(binaryOperation),
-            Literal literal => AnalyzeLiteral(literal),
+            NumberLiteral numberLiteral => AnalyzeNumberLiteral(numberLiteral),
+            StringLiteral stringLiteral => AnalyzeStringLiteral(stringLiteral),
+            BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
+            ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
+            NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
             FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
             BracketIndexing bracketIndexing => AnalyzeBracketIndexing(bracketIndexing),
@@ -342,16 +346,46 @@ public class SemanticAnalyzer
         return [TypeRegistry.UnknownType];
     }
 
-    private List<Type> AnalyzeLiteral(Literal literal)
+    private List<Type> AnalyzeNumberLiteral(NumberLiteral numberLiteral)
     {
-        return literal.kind switch
+        return [TypeRegistry.NumberType];
+    }
+
+    private List<Type> AnalyzeStringLiteral(StringLiteral stringLiteral)
+    {
+        return [TypeRegistry.StringType];
+    }
+
+    private List<Type> AnalyzeBooleanLiteral(BooleanLiteral booleanLiteral)
+    {
+        return [TypeRegistry.BooleanType];
+    }
+
+    private List<Type> AnalyzeArrayLiteral(ArrayLiteral arrayLiteral)
+    {
+        Type? common = null;
+
+        var values = ExpandExpressionList(arrayLiteral.values);
+        foreach (var value in values)
         {
-            LiteralKind.Number => [TypeRegistry.NumberType],
-            LiteralKind.String => [TypeRegistry.StringType],
-            LiteralKind.Boolean => [TypeRegistry.BooleanType],
-            LiteralKind.Nil => [TypeRegistry.NilType],
-            _ => throw new SwitchExpressionException(literal.kind)
-        };
+            if (common == null)
+                common = value.Item1;
+            else
+                common = Type.GetCommonType(common, value.Item1);
+
+            if (common == null)
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, $"Could not find a common type for array initializer", DiagnosticSeverity.Error, arrayLiteral.source));
+                break;
+            }
+        }
+
+        return [new ArrayType(common ?? TypeRegistry.UnknownType, TypeRegistry.AnyType)];
+    }
+
+    private List<Type> AnalyzeNilLiteral(NilLiteral nilLiteral)
+    {
+        return [TypeRegistry.NilType];
     }
 
     private List<Type> AnalyzeVariableReference(VariableReference variableReference)

@@ -243,22 +243,31 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
 
     public override object VisitNumberLiteral(CraterParser.NumberLiteralContext context)
     {
-        return new Literal(context.GetText(), LiteralKind.Number, Source.FromContext(context));
+        return new NumberLiteral(context.GetText(), Source.FromContext(context));
     }
 
     public override object VisitStringLiteral(CraterParser.StringLiteralContext context)
     {
-        return new Literal(context.GetText(), LiteralKind.String, Source.FromContext(context));
+        return new StringLiteral(context.GetText(), Source.FromContext(context));
     }
 
     public override object VisitBooleanLiteral(CraterParser.BooleanLiteralContext context)
     {
-        return new Literal(context.GetText(), LiteralKind.Boolean, Source.FromContext(context));
+        return new BooleanLiteral(context.GetText(), Source.FromContext(context));
+    }
+
+    public override object VisitArrayLiteral(CraterParser.ArrayLiteralContext context)
+    {
+        if (context.expressionList() == null)
+            return new ArrayLiteral([], Source.FromContext(context));
+
+        var values = Get<List<Expression>>(context.expressionList());
+        return new ArrayLiteral(values, Source.FromContext(context));
     }
 
     public override object VisitNilLiteral(CraterParser.NilLiteralContext context)
     {
-        return new Literal(context.GetText(), LiteralKind.Nil, Source.FromContext(context));
+        return new NilLiteral(context.GetText(), Source.FromContext(context));
     }
 
     public override object VisitPrimaryExpression(CraterParser.PrimaryExpressionContext context)

@@ -46,12 +46,12 @@ public sealed record UnaryOperation(string op, Expression expression, Source sou
 
 public sealed record BinaryOperation(Expression left, string op, Expression right, Source source) : Expression(source);
 
-public enum LiteralKind
-{
-    Number,
-    String,
-    Boolean,
-    Nil
-}
+public sealed record NumberLiteral(string value, Source source) : Expression(source);
 
-public sealed record Literal(string value, LiteralKind kind, Source source) : Expression(source);
+public sealed record StringLiteral(string value, Source source) : Expression(source);
+
+public sealed record BooleanLiteral(string value, Source source) : Expression(source);
+
+public sealed record ArrayLiteral(List<Expression> values, Source source) : Expression(source);
+
+public sealed record NilLiteral(string value, Source source) : Expression(source);

@@ -52,9 +52,10 @@ COLON   : ':';
 ASSIGN  : '=';
 QMARK   : '?';
 
-LPAREN  : '(';
-RPAREN  : ')';
-
+LPAREN      : '(';
+RPAREN      : ')';
+LBRACKET    : '{';
+RBRACKET    : '}';
 LSQRBRACKET : '[';
 RSQRBRACKET : ']';
 
