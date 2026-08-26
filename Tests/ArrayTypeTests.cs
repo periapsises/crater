@@ -35,4 +35,10 @@ public class ArrayTypeTests
             Assert.That(nullableNumberArray.CanHold(nullableNumberArray2));
         });
     }
+
+    [Test]
+    public void CannotIndexNonArrayTypes()
+    {
+        Assert.That(TypeRegistry.NumberType.ResolveIndex(TypeRegistry.NumberType), Is.Null);
+    }
 }
