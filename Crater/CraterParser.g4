@@ -39,7 +39,9 @@ assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 
 returnStatement: RETURN expressionList?;
 
-typeName: IDENTIFIER QMARK?;
+typeName: typeName (QMARK | LSQRBRACKET RSQRBRACKET) | primaryType;
+
+primaryType: IDENTIFIER;
 
 expressionList: expression (COMMA expression)*;
 
@@ -61,9 +63,14 @@ primaryExpression: prefixExpression postfixExpression*;
 
 prefixExpression: IDENTIFIER # VariableReference;
 
-postfixExpression: postfixFunctionCall;
+postfixExpression
+    : postfixFunctionCall
+    | postfixBracketIndexing
+    ;
 
 postfixFunctionCall: LPAREN expressionList? RPAREN;
+
+postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
 
 logicalOperator
     : EQUAL

@@ -26,20 +26,21 @@ public sealed record Assignment(List<string> variables, List<Expression> values,
 
 public sealed record ReturnStatement(List<Expression> returnValues, Source source) : Node(source);
 
-public sealed record TypeName(string name, bool nullable, Source source) : Node(source)
-{
-    public override string ToString()
-    {
-        if (nullable) return name + "?";
-        return name;
-    }
-}
+public abstract record TypeName(Source source) : Node(source);
+
+public sealed record NamedTypeName(string name, Source source) : TypeName(source);
+
+public sealed record NullableTypeName(TypeName baseTypeName, Source source) : TypeName(source);
+
+public sealed record ArrayTypeName(TypeName baseTypeName, Source source) : TypeName(source);
 
 public abstract record Expression(Source source) : Node(source);
 
 public sealed record VariableReference(string name, Source source) : Expression(source);
 
 public sealed record FunctionCall(Expression function, List<Expression> arguments, Source source) : Expression(source);
+
+public sealed record BracketIndexing(Expression prefix, Expression index, Source source) : Expression(source);
 
 public sealed record UnaryOperation(string op, Expression expression, Source source) : Expression(source);
 

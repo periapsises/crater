@@ -160,10 +160,23 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
 
     public override object VisitTypeName(CraterParser.TypeNameContext context)
     {
-        var name = context.IDENTIFIER().GetText();
-        var nullable = context.QMARK() != null;
+        if (context.primaryType() != null)
+            return Get<TypeName>(context.primaryType());
 
-        return new TypeName(name, nullable, Source.FromContext(context));
+        var baseTypeName = Get<TypeName>(context.typeName());
+
+        if (context.QMARK() != null)
+            return new NullableTypeName(baseTypeName, Source.FromContext(context));
+
+        if (context.LSQRBRACKET() != null)
+            return new ArrayTypeName(baseTypeName, Source.FromContext(context));
+
+        throw new Exception($"Unsupported decorated typename '{context.GetText()}'");
+    }
+
+    public override object VisitPrimaryType(CraterParser.PrimaryTypeContext context)
+    {
+        return new NamedTypeName(context.IDENTIFIER().GetText(), Source.FromContext(context));
     }
 
     public override object VisitExpressionList(CraterParser.ExpressionListContext context)
@@ -268,6 +281,9 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         if (context.postfixFunctionCall() is { } postfixFunctionCallContext)
             return BuildPostfixFunctionCall(postfixFunctionCallContext, prefix);
 
+        if (context.postfixBracketIndexing() is { } postfixBracketIndexingContext)
+            return BuildPostfixBracketIndexing(postfixBracketIndexingContext, prefix);
+
         throw new InvalidOperationException($"Unsupported postfix expression type: {context.GetText()}");
     }
 
@@ -278,5 +294,11 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
 
         var arguments = Get<List<Expression>>(context.expressionList());
         return new FunctionCall(prefix, arguments, Source.FromContext(context));
+    }
+
+    private BracketIndexing BuildPostfixBracketIndexing(CraterParser.PostfixBracketIndexingContext context, Expression prefix)
+    {
+        var index = Get<Expression>(context.expression());
+        return new BracketIndexing(prefix, index, Source.FromContext(context));
     }
 }

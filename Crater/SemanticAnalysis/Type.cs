@@ -95,5 +95,10 @@ public abstract class Type(string name, Type? baseType = null)
         return common is NullableType nullableCommon ? nullableCommon.InnerType : common;
     }
 
+    public virtual Type? ResolveIndex(Type index)
+    {
+        return null;
+    }
+
     public override string ToString() => GetName();
 }

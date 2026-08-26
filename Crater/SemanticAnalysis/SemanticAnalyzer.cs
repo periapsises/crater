@@ -258,17 +258,35 @@ public class SemanticAnalyzer
 
     private Type AnalyzeTypeName(TypeName typeName)
     {
-        var type = _types.GetValueOrDefault(typeName.name);
-        if (type == null)
+        return typeName switch
         {
-            _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{typeName}'", DiagnosticSeverity.Error, typeName.source));
-            type = TypeRegistry.UnknownType;
-        }
+            NullableTypeName nullableTypeName => AnalyzeNullableTypeName(nullableTypeName),
+            ArrayTypeName arrayTypeName => AnalyzeArrayTypeName(arrayTypeName),
+            NamedTypeName namedTypeName => AnalyzeNamedTypeName(namedTypeName),
+            _ => throw new SwitchExpressionException(typeName)
+        };
+    }
 
-        if (typeName.nullable)
-            type = new NullableType(type);
+    private Type AnalyzeNullableTypeName(NullableTypeName nullableTypeName)
+    {
+        var baseType = AnalyzeTypeName(nullableTypeName.baseTypeName);
+        return new NullableType(baseType);
+    }
 
-        return type;
+    private Type AnalyzeArrayTypeName(ArrayTypeName arrayTypeName)
+    {
+        var baseType = AnalyzeTypeName(arrayTypeName.baseTypeName);
+        return new ArrayType(baseType, TypeRegistry.AnyType);
+    }
+
+    private Type AnalyzeNamedTypeName(NamedTypeName namedTypeName)
+    {
+        var type = _types.GetValueOrDefault(namedTypeName.name);
+        if (type != null)
+            return type;
+
+        _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{namedTypeName.name}'", DiagnosticSeverity.Error, namedTypeName.source));
+        return TypeRegistry.UnknownType;
     }
 
     private List<Type> AnalyzeExpression(Expression expression)
@@ -280,6 +298,7 @@ public class SemanticAnalyzer
             Literal literal => AnalyzeLiteral(literal),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
             FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
+            BracketIndexing bracketIndexing => AnalyzeBracketIndexing(bracketIndexing),
             _ => throw new SwitchExpressionException(expression)
         };
     }
@@ -375,6 +394,20 @@ public class SemanticAnalyzer
         }
 
         return functionType.ReturnTypes.ToList();
+    }
+
+    private List<Type> AnalyzeBracketIndexing(BracketIndexing bracketIndexing)
+    {
+        var prefixType = AnalyzeExpression(bracketIndexing.prefix).FirstOrDefault() ?? TypeRegistry.NilType;
+        var indexType = AnalyzeExpression(bracketIndexing.index).FirstOrDefault() ?? TypeRegistry.NilType;
+
+        var resultType = prefixType.ResolveIndex(indexType);
+        if (resultType != null)
+            return [resultType];
+
+        // TODO: Error code for indexing not supported
+        _reporter.Report(new Diagnostic("0", $"Cannot perform indexing on '{prefixType}'", DiagnosticSeverity.Error, bracketIndexing.source));
+        return [TypeRegistry.UnknownType];
     }
 
     private bool IsTernaryPattern(BinaryOperation binaryOperation, [NotNullWhen(true)] out Expression? valueA, [NotNullWhen(true)] out Expression? valueB)
