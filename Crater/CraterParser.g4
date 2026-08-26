@@ -39,7 +39,9 @@ assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 
 returnStatement: RETURN expressionList?;
 
-typeName: IDENTIFIER QMARK?;
+typeName: typeName (QMARK | LSQRBRACKET RSQRBRACKET) | primaryType;
+
+primaryType: IDENTIFIER;
 
 expressionList: expression (COMMA expression)*;
 
@@ -51,6 +53,7 @@ expression
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
+    | LBRACKET expressionList? RBRACKET                         # ArrayLiteral
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
     | (TRUE | FALSE)                                            # BooleanLiteral
@@ -61,9 +64,14 @@ primaryExpression: prefixExpression postfixExpression*;
 
 prefixExpression: IDENTIFIER # VariableReference;
 
-postfixExpression: postfixFunctionCall;
+postfixExpression
+    : postfixFunctionCall
+    | postfixBracketIndexing
+    ;
 
 postfixFunctionCall: LPAREN expressionList? RPAREN;
+
+postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
 
 logicalOperator
     : EQUAL

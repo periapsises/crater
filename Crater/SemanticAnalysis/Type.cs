@@ -15,16 +15,30 @@ public abstract class Type(string name, Type? baseType = null)
         if (other is UnknownType)
             return true;
 
-        if (GetType() == other.GetType())
+        if (IsSameType(other))
             return true;
 
         return other.BaseType != null && CanHold(other.BaseType);
+    }
+
+    public virtual bool IsSameType(Type other)
+    {
+        return GetType() == other.GetType();
     }
 
     public static Type? GetCommonType(Type left, Type right)
     {
         if (left is UnknownType || right is UnknownType)
             return TypeRegistry.UnknownType;
+
+        if (left is NilType && right is NilType)
+            return TypeRegistry.NilType;
+
+        if (left is NilType)
+            return right is NullableType ? right : new NullableType(right);
+
+        if (right is NilType)
+            return left is NullableType ? left : new NullableType(left);
 
         var leftNonNullable = left is NullableType nullableLeftType ? nullableLeftType.InnerType : left;
         var rightNonNullable = right is NullableType nullableRightType ? nullableRightType.InnerType : right;
@@ -93,6 +107,11 @@ public abstract class Type(string name, Type? baseType = null)
             return common is NullableType ? common : new NullableType(common);
 
         return common is NullableType nullableCommon ? nullableCommon.InnerType : common;
+    }
+
+    public virtual Type? ResolveIndex(Type index)
+    {
+        return null;
     }
 
     public override string ToString() => GetName();

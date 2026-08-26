@@ -7,11 +7,16 @@ public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type
 
     public override bool CanHold(Type other)
     {
+        if (BaseType == TypeRegistry.AnyType && other is FunctionType)
+            return true;
+
+        return IsSameType(other);
+    }
+
+    public override bool IsSameType(Type other)
+    {
         if (other is not FunctionType otherFunction)
             return false;
-
-        if (BaseType == TypeRegistry.AnyType)
-            return true;
 
         if (ParameterTypes.Count != otherFunction.ParameterTypes.Count)
             return false;
