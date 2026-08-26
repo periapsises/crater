@@ -11,6 +11,16 @@ public class ArrayType : Type
         _returnType = elementType is NullableType ? elementType : new NullableType(elementType);
     }
 
+    public override bool CanHold(Type other)
+    {
+        return IsSameType(other);
+    }
+
+    public override bool IsSameType(Type other)
+    {
+        return other is ArrayType otherArray && ElementType.IsSameType(otherArray.ElementType);
+    }
+
     public override Type? ResolveIndex(Type index)
     {
         if (index is NumberType)

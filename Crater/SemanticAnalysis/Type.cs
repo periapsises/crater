@@ -15,10 +15,15 @@ public abstract class Type(string name, Type? baseType = null)
         if (other is UnknownType)
             return true;
 
-        if (GetType() == other.GetType())
+        if (IsSameType(other))
             return true;
 
         return other.BaseType != null && CanHold(other.BaseType);
+    }
+
+    public virtual bool IsSameType(Type other)
+    {
+        return GetType() == other.GetType();
     }
 
     public static Type? GetCommonType(Type left, Type right)

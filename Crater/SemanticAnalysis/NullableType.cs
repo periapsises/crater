@@ -29,4 +29,9 @@ public class NullableType : Type
 
         return InnerType.CanHold(other);
     }
+
+    public override bool IsSameType(Type other)
+    {
+        return other is NullableType otherNullable && InnerType.IsSameType(otherNullable.InnerType);
+    }
 }
