@@ -13,6 +13,9 @@ public class ArrayType : Type
 
     public override bool CanHold(Type other)
     {
+        if (other is EmptyArrayType)
+            return true;
+
         return IsSameType(other);
     }
 
@@ -27,5 +30,13 @@ public class ArrayType : Type
             return _returnType;
 
         return null;
+    }
+}
+
+public sealed class EmptyArrayType() : ArrayType(TypeRegistry.UnknownType, TypeRegistry.AnyType)
+{
+    public override string GetName()
+    {
+        return "empty[]";
     }
 }

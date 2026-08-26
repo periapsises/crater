@@ -380,7 +380,10 @@ public class SemanticAnalyzer
             }
         }
 
-        return [new ArrayType(common ?? TypeRegistry.UnknownType, TypeRegistry.AnyType)];
+        if (common == null)
+            return [new EmptyArrayType()];
+
+        return [new ArrayType(common, TypeRegistry.AnyType)];
     }
 
     private List<Type> AnalyzeNilLiteral(NilLiteral nilLiteral)

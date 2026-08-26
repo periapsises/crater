@@ -41,4 +41,21 @@ public class ArrayTypeTests
     {
         Assert.That(TypeRegistry.NumberType.ResolveIndex(TypeRegistry.NumberType), Is.Null);
     }
+
+    [Test]
+    public void CanIndexRecursiveArrays()
+    {
+        var sourceArray = new ArrayType(TypeRegistry.NumberType, TypeRegistry.AnyType);
+        var recursiveArray = new ArrayType(sourceArray, TypeRegistry.AnyType);
+
+        var outerResult = recursiveArray.ResolveIndex(TypeRegistry.NumberType);
+        Assert.That(outerResult, Is.Not.Null);
+        Assert.That(outerResult.IsSameType(new NullableType(sourceArray)));
+
+        Assert.That(outerResult, Is.AssignableTo<NullableType>());
+
+        var innerResult = ((NullableType)outerResult).InnerType.ResolveIndex(TypeRegistry.NumberType);
+        Assert.That(innerResult, Is.Not.Null);
+        Assert.That(innerResult.IsSameType(new NullableType(TypeRegistry.NumberType)));
+    }
 }
