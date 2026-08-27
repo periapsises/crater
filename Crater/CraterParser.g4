@@ -13,6 +13,7 @@ statement
     | ifStatement
     | functionCall
     | assignment
+    | whileLoop
     | returnStatement
     ;
 
@@ -42,6 +43,8 @@ elseStatement: ELSE block;
 functionCall: expression LPAREN expressionList? RPAREN;
 
 assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
+
+whileLoop: WHILE condition=expression DO block END;
 
 returnStatement: RETURN expressionList?;
 

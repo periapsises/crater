@@ -30,6 +30,8 @@ public class SemanticAnalyzer
 
         _global = new Environment();
         _local = new Environment(_global);
+
+        Library.Load(_global);
     }
 
     private void EnterScope() => _local = new Environment(_local);
@@ -66,6 +68,9 @@ public class SemanticAnalyzer
                     break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
+                    break;
+                case WhileLoop whileLoop:
+                    AnalyzeWhileLoop(whileLoop);
                     break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
@@ -236,6 +241,15 @@ public class SemanticAnalyzer
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
+    }
+
+    private void AnalyzeWhileLoop(WhileLoop whileLoop)
+    {
+        AnalyzeExpression(whileLoop.condition);
+
+        EnterScope();
+        AnalyzeBlock(whileLoop.block);
+        ExitScope();
     }
 
     private void AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)

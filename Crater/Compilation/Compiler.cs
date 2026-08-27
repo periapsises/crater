@@ -50,6 +50,9 @@ public class Compiler
                 case Assignment assignment:
                     CompileAssignment(assignment);
                     break;
+                case WhileLoop whileLoop:
+                    CompileWhileLoop(whileLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
@@ -188,6 +191,19 @@ public class Compiler
         }
 
         _writer.WriteLine();
+    }
+
+    private void CompileWhileLoop(WhileLoop whileLoop)
+    {
+        _writer.Write("while ");
+        CompileExpression(whileLoop.condition);
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(whileLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
     }
 
     private void CompileReturnStatement(ReturnStatement returnStatement)
