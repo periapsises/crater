@@ -1,9 +1,11 @@
 namespace Crater.SemanticAnalysis.Types;
 
-public class FunctionType(IReadOnlyList<Type> parameterTypes, IReadOnlyList<Type> returnTypes, Type baseType) : Type(BuildSignature(parameterTypes, returnTypes), baseType)
+public class FunctionType(IReadOnlyList<Type> parameterTypes, Type? varargType, IReadOnlyList<Type> returnTypes, Type baseType) : Type(BuildSignature(parameterTypes, returnTypes), baseType)
 {
     public readonly IReadOnlyList<Type> ParameterTypes = parameterTypes;
     public readonly IReadOnlyList<Type> ReturnTypes = returnTypes;
+
+    public readonly Type? VarargType = varargType;
 
     public override bool CanHold(Type other)
     {

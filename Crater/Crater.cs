@@ -22,13 +22,13 @@ public static class Crater
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
 
-        var syntaxTreeConverter = new SyntaxTreeConverter();
+        var reporter = new DiagnosticBag();
+
+        var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
         var node = syntaxTreeConverter.Visit(craterParser.program());
 
         if (node is not Program program)
             throw new Exception("Failed to convert resulting tree.");
-
-        var reporter = new DiagnosticBag();
 
         var semanticAnalyzer = new SemanticAnalyzer(reporter);
         semanticAnalyzer.AnalyzeProgram(program);

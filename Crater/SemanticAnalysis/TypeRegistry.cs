@@ -9,7 +9,7 @@ public static class TypeRegistry
     public static readonly Type StringType = new StringType(AnyType);
     public static readonly Type BooleanType = new BooleanType(AnyType);
 
-    public static readonly Type FunctionType = new FunctionType([], [], AnyType);
+    public static readonly Type FunctionType = new FunctionType([], null, [], AnyType);
 
     public static readonly Type NilType = new NilType();
     public static readonly Type UnknownType = new UnknownType();

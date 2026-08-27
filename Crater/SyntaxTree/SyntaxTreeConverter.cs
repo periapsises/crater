@@ -1,10 +1,13 @@
 using Antlr4.Runtime;
 using Crater.Antlr;
+using Crater.Diagnostics;
 
 namespace Crater.SyntaxTree;
 
-public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
+public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBaseVisitor<object>
 {
+    private readonly IDiagnosticReporter _reporter = reporter;
+
     private T Get<T>(ParserRuleContext context)
     {
         var node = Visit(context);
@@ -66,10 +69,24 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         else
             parameters = [];
 
+        VarargParameter? varargParameter = null;
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            if (parameters[i] is not VarargParameter varargParam)
+                continue;
+
+            if (i != parameters.Count - 1)
+                _reporter.Report(new Diagnostic("0", $"Vararg parameter must be the last parameter in a function declaration", DiagnosticSeverity.Error, varargParam.source));
+
+            varargParameter = varargParam;
+        }
+
+        parameters.RemoveAll(parameter => parameter is VarargParameter);
+
         var returnTypes = Get<List<TypeName>>(context.returnTypes());
         var block = Get<Block>(context.block());
 
-        return new FunctionDeclaration(local, name, parameters, returnTypes, block, Source.FromContext(context));
+        return new FunctionDeclaration(local, name, parameters, varargParameter, returnTypes, block, Source.FromContext(context));
     }
 
     public override object VisitParameters(CraterParser.ParametersContext context)
@@ -81,12 +98,18 @@ public class SyntaxTreeConverter : CraterParserBaseVisitor<object>
         return parameters;
     }
 
-    public override object VisitParameter(CraterParser.ParameterContext context)
+    public override object VisitNamedParameter(CraterParser.NamedParameterContext context)
     {
         var name = context.name.Text;
         var type = Get<TypeName>(context.typeName());
 
         return new Parameter(name, type, Source.FromContext(context));
+    }
+
+    public override object VisitVarargParameter(CraterParser.VarargParameterContext context)
+    {
+        var type = Get<TypeName>(context.typeName());
+        return new VarargParameter(type, Source.FromContext(context));
     }
 
     public override object VisitReturnTypes(CraterParser.ReturnTypesContext context)
