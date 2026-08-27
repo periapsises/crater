@@ -268,9 +268,6 @@ public class SemanticAnalyzer
 
     private void AnalyzeNumericForLoop(NumericForLoop numericForLoop)
     {
-        EnterScope();
-        _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
-
         var initializerType = AnalyzeExpression(numericForLoop.initializer).FirstOrDefault() ?? TypeRegistry.NilType;
         if (initializerType is not NumberType)
             _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Initializer for numeric for loop variable must be of type 'number' but got '{initializerType}'", DiagnosticSeverity.Error, numericForLoop.initializer.source));
@@ -282,13 +279,12 @@ public class SemanticAnalyzer
         if (numericForLoop.increment is not null)
         {
             var incrementType = AnalyzeExpression(numericForLoop.increment).FirstOrDefault() ?? TypeRegistry.NilType;
-            if (incrementType is NullableType nullableIncrement)
-                incrementType = nullableIncrement.InnerType;
-
             if (incrementType is not NumberType)
-                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Increment for numeric for loop must be of type 'number' or 'number?' but got '{incrementType}'", DiagnosticSeverity.Error, numericForLoop.increment.source));
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Increment for numeric for loop must be of type 'number' but got '{incrementType}'", DiagnosticSeverity.Error, numericForLoop.increment.source));
         }
 
+        EnterScope();
+        _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
         AnalyzeBlock(numericForLoop.block);
         ExitScope();
     }
