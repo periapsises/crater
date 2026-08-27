@@ -16,10 +16,16 @@ public class ArrayType : Type
         if (other is EmptyArrayType)
             return true;
 
-        if (other is ArrayType otherArray)
-            return ElementType.CanHold(otherArray.ElementType);
+        if (other is not ArrayType otherArray)
+            return false;
 
-        return IsSameType(other);
+        if (otherArray.ElementType is EmptyArrayType)
+            return true;
+
+        if (ElementType is ArrayType selfElement && otherArray.ElementType is ArrayType otherElement)
+            return selfElement.CanHold(otherElement);
+
+        return ElementType.IsSameType(otherArray.ElementType);
     }
 
     public override bool IsSameType(Type other)
