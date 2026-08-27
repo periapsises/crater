@@ -182,6 +182,49 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new Assignment(variables, values, Source.FromContext(context));
     }
 
+    public override object VisitWhileLoop(CraterParser.WhileLoopContext context)
+    {
+        var condition = Get<Expression>(context.condition);
+        var block = Get<Block>(context.block());
+
+        return new WhileLoop(condition, block, Source.FromContext(context));
+    }
+
+    public override object VisitRepeatLoop(CraterParser.RepeatLoopContext context)
+    {
+        var block = Get<Block>(context.block());
+        var condition = Get<Expression>(context.condition);
+
+        return new RepeatLoop(block, condition, Source.FromContext(context));
+    }
+
+    public override object VisitNumericForLoop(CraterParser.NumericForLoopContext context)
+    {
+        var variable = context.variable.Text;
+        var initializer = Get<Expression>(context.initializer);
+        var limit = Get<Expression>(context.limit);
+
+        Expression? increment = null;
+        if (context.increment != null)
+            increment = Get<Expression>(context.increment);
+
+        var block = Get<Block>(context.block());
+
+        return new NumericForLoop(variable, initializer, limit, increment, block, Source.FromContext(context));
+    }
+
+    public override object VisitGenericForLoop(CraterParser.GenericForLoopContext context)
+    {
+        List<VariableDeclarator> declarators = [];
+        foreach (var variableDeclaratorContext in context.variableDeclarator())
+            declarators.Add(Get<VariableDeclarator>(variableDeclaratorContext));
+
+        var expression = Get<Expression>(context.expression());
+        var block = Get<Block>(context.block());
+
+        return new GenericForLoop(declarators, expression, block, Source.FromContext(context));
+    }
+
     public override object VisitReturnStatement(CraterParser.ReturnStatementContext context)
     {
         if (context.expressionList() == null)

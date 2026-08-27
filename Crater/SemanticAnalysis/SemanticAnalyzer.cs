@@ -30,6 +30,8 @@ public class SemanticAnalyzer
 
         _global = new Environment();
         _local = new Environment(_global);
+
+        Library.Load(_global);
     }
 
     private void EnterScope() => _local = new Environment(_local);
@@ -66,6 +68,18 @@ public class SemanticAnalyzer
                     break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
+                    break;
+                case WhileLoop whileLoop:
+                    AnalyzeWhileLoop(whileLoop);
+                    break;
+                case RepeatLoop repeatLoop:
+                    AnalyzeRepeatLoop(repeatLoop);
+                    break;
+                case NumericForLoop numericForLoop:
+                    AnalyzeNumericForLoop(numericForLoop);
+                    break;
+                case GenericForLoop genericForLoop:
+                    AnalyzeGenericForLoop(genericForLoop);
                     break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
@@ -236,6 +250,85 @@ public class SemanticAnalyzer
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
+    }
+
+    private void AnalyzeWhileLoop(WhileLoop whileLoop)
+    {
+        AnalyzeExpression(whileLoop.condition);
+
+        EnterScope();
+        AnalyzeBlock(whileLoop.block);
+        ExitScope();
+    }
+
+    private void AnalyzeRepeatLoop(RepeatLoop repeatLoop)
+    {
+        EnterScope();
+        AnalyzeBlock(repeatLoop.block);
+        AnalyzeExpression(repeatLoop.condition);
+        ExitScope();
+    }
+
+    private void AnalyzeNumericForLoop(NumericForLoop numericForLoop)
+    {
+        var initializerType = AnalyzeExpression(numericForLoop.initializer).FirstOrDefault() ?? TypeRegistry.NilType;
+        if (initializerType is not NumberType)
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Initializer for numeric for loop variable must be of type 'number' but got '{initializerType}'", DiagnosticSeverity.Error, numericForLoop.initializer.source));
+
+        var limitType = AnalyzeExpression(numericForLoop.limit).FirstOrDefault() ?? TypeRegistry.NilType;
+        if (limitType is not NumberType)
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Limit for numeric for loop must be of type 'number' but got '{limitType}'", DiagnosticSeverity.Error, numericForLoop.limit.source));
+
+        if (numericForLoop.increment is not null)
+        {
+            var incrementType = AnalyzeExpression(numericForLoop.increment).FirstOrDefault() ?? TypeRegistry.NilType;
+            if (incrementType is not NumberType)
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Increment for numeric for loop must be of type 'number' but got '{incrementType}'", DiagnosticSeverity.Error, numericForLoop.increment.source));
+        }
+
+        EnterScope();
+        _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
+        AnalyzeBlock(numericForLoop.block);
+        ExitScope();
+    }
+
+    private void AnalyzeGenericForLoop(GenericForLoop genericForLoop)
+    {
+        var iterator = AnalyzeExpression(genericForLoop.expression).FirstOrDefault() ?? TypeRegistry.NilType;
+
+        EnterScope();
+
+        if (iterator is FunctionType functionType)
+        {
+            for (var i = 0; i < genericForLoop.declarators.Count; i++)
+            {
+                var declarator = genericForLoop.declarators[i];
+                var returnedType = functionType.ReturnTypes.ElementAtOrDefault(i);
+
+                var (name, type) = AnalyzeVariableDeclarator(_local, declarator);
+                if (returnedType is null && type is not NullableType)
+                    _reporter.Report(new Diagnostic(TypeErrors.NullableTypeMismatch, $"Iterator does not return a value for generic for loop variable '{name}' which is not declared nullable", DiagnosticSeverity.Error, declarator.source));
+                else if (returnedType is not null && !type.CanHold(returnedType))
+                {
+                    if (i != 0 || returnedType is not NullableType nullableReturn || !type.CanHold(nullableReturn.InnerType))
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Generic for loop variable '{name}' of type '{type}' does not match iterator return type '{returnedType}'", DiagnosticSeverity.Error, declarator.source));
+                }
+
+                _local.Define(name, type);
+            }
+        }
+        else
+        {
+            foreach (var declarator in genericForLoop.declarators)
+            {
+                var (name, type) = AnalyzeVariableDeclarator(_local, declarator);
+                _local.Define(name, type);
+            }
+        }
+
+        AnalyzeBlock(genericForLoop.block);
+
+        ExitScope();
     }
 
     private void AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)

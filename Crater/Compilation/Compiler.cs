@@ -50,6 +50,18 @@ public class Compiler
                 case Assignment assignment:
                     CompileAssignment(assignment);
                     break;
+                case WhileLoop whileLoop:
+                    CompileWhileLoop(whileLoop);
+                    break;
+                case RepeatLoop repeatLoop:
+                    CompileRepeatLoop(repeatLoop);
+                    break;
+                case NumericForLoop numericForLoop:
+                    CompileNumericForLoop(numericForLoop);
+                    break;
+                case GenericForLoop genericForLoop:
+                    CompileGenericForLoop(genericForLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
@@ -188,6 +200,77 @@ public class Compiler
         }
 
         _writer.WriteLine();
+    }
+
+    private void CompileWhileLoop(WhileLoop whileLoop)
+    {
+        _writer.Write("while ");
+        CompileExpression(whileLoop.condition);
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(whileLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
+    }
+
+    private void CompileRepeatLoop(RepeatLoop repeatLoop)
+    {
+        _writer.WriteLine("repeat");
+
+        _writer.Indent();
+        CompileBlock(repeatLoop.block);
+        _writer.Outdent();
+
+        _writer.Write("until ");
+        CompileExpression(repeatLoop.condition);
+        _writer.WriteLine();
+    }
+
+    private void CompileNumericForLoop(NumericForLoop numericForLoop)
+    {
+        _writer.Write($"for {numericForLoop.variable} = ");
+        CompileExpression(numericForLoop.initializer);
+        _writer.Write(", ");
+        CompileExpression(numericForLoop.limit);
+
+        if (numericForLoop.increment is not null)
+        {
+            _writer.Write(", ");
+            CompileExpression(numericForLoop.increment);
+        }
+
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(numericForLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
+    }
+
+    private void CompileGenericForLoop(GenericForLoop genericForLoop)
+    {
+        _writer.Write("for ");
+
+        var declaratorCount = genericForLoop.declarators.Count;
+        for (var i = 0; i < declaratorCount; i++)
+        {
+            _writer.Write(genericForLoop.declarators[i].name);
+            if (i < declaratorCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write(" in ");
+        CompileExpression(genericForLoop.expression);
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(genericForLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
     }
 
     private void CompileReturnStatement(ReturnStatement returnStatement)

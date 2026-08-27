@@ -12,6 +12,11 @@ ELSE    : 'else';
 DO      : 'do';
 END     : 'end';
 RETURN  : 'return';
+WHILE   : 'while';
+REPEAT  : 'repeat';
+UNTIL   : 'until';
+FOR     : 'for';
+IN      : 'in';
 
 // Declarations & Scoping
 LOCAL   : 'local';

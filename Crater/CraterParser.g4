@@ -13,6 +13,10 @@ statement
     | ifStatement
     | functionCall
     | assignment
+    | whileLoop
+    | repeatLoop
+    | numericForLoop
+    | genericForLoop
     | returnStatement
     ;
 
@@ -42,6 +46,14 @@ elseStatement: ELSE block;
 functionCall: expression LPAREN expressionList? RPAREN;
 
 assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
+
+whileLoop: WHILE condition=expression DO block END;
+
+repeatLoop: REPEAT block UNTIL condition=expression;
+
+numericForLoop: FOR variable=IDENTIFIER ASSIGN initializer=expression COMMA limit=expression (COMMA increment=expression)? DO block END;
+
+genericForLoop: FOR variableDeclarator (COMMA variableDeclarator)* IN expression DO block END;
 
 returnStatement: RETURN expressionList?;
 
