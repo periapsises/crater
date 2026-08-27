@@ -13,6 +13,8 @@ DO      : 'do';
 END     : 'end';
 RETURN  : 'return';
 WHILE   : 'while';
+REPEAT  : 'repeat';
+UNTIL   : 'until';
 
 // Declarations & Scoping
 LOCAL   : 'local';

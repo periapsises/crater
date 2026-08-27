@@ -72,6 +72,9 @@ public class SemanticAnalyzer
                 case WhileLoop whileLoop:
                     AnalyzeWhileLoop(whileLoop);
                     break;
+                case RepeatLoop repeatLoop:
+                    AnalyzeRepeatLoop(repeatLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
@@ -249,6 +252,14 @@ public class SemanticAnalyzer
 
         EnterScope();
         AnalyzeBlock(whileLoop.block);
+        ExitScope();
+    }
+
+    private void AnalyzeRepeatLoop(RepeatLoop repeatLoop)
+    {
+        EnterScope();
+        AnalyzeBlock(repeatLoop.block);
+        AnalyzeExpression(repeatLoop.condition);
         ExitScope();
     }
 

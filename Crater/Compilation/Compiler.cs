@@ -53,6 +53,9 @@ public class Compiler
                 case WhileLoop whileLoop:
                     CompileWhileLoop(whileLoop);
                     break;
+                case RepeatLoop repeatLoop:
+                    CompileRepeatLoop(repeatLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
@@ -204,6 +207,19 @@ public class Compiler
         _writer.Outdent();
 
         _writer.WriteLine("end");
+    }
+
+    private void CompileRepeatLoop(RepeatLoop repeatLoop)
+    {
+        _writer.WriteLine("repeat");
+
+        _writer.Indent();
+        CompileBlock(repeatLoop.block);
+        _writer.Outdent();
+
+        _writer.Write("until ");
+        CompileExpression(repeatLoop.condition);
+        _writer.WriteLine();
     }
 
     private void CompileReturnStatement(ReturnStatement returnStatement)

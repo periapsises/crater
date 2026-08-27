@@ -14,6 +14,7 @@ statement
     | functionCall
     | assignment
     | whileLoop
+    | repeatLoop
     | returnStatement
     ;
 
@@ -45,6 +46,8 @@ functionCall: expression LPAREN expressionList? RPAREN;
 assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 
 whileLoop: WHILE condition=expression DO block END;
+
+repeatLoop: REPEAT block UNTIL condition=expression;
 
 returnStatement: RETURN expressionList?;
 

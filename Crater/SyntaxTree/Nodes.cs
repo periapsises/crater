@@ -28,6 +28,8 @@ public sealed record Assignment(List<string> variables, List<Expression> values,
 
 public sealed record WhileLoop(Expression condition, Block block, Source source) : Node(source);
 
+public sealed record RepeatLoop(Block block, Expression condition, Source source) : Node(source);
+
 public sealed record ReturnStatement(List<Expression> returnValues, Source source) : Node(source);
 
 public abstract record TypeName(Source source) : Node(source);

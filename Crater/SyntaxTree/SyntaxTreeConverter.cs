@@ -190,6 +190,14 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new WhileLoop(condition, block, Source.FromContext(context));
     }
 
+    public override object VisitRepeatLoop(CraterParser.RepeatLoopContext context)
+    {
+        var block = Get<Block>(context.block());
+        var condition = Get<Expression>(context.condition);
+
+        return new RepeatLoop(block, condition, Source.FromContext(context));
+    }
+
     public override object VisitReturnStatement(CraterParser.ReturnStatementContext context)
     {
         if (context.expressionList() == null)
