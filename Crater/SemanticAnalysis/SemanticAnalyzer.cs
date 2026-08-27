@@ -78,6 +78,9 @@ public class SemanticAnalyzer
                 case NumericForLoop numericForLoop:
                     AnalyzeNumericForLoop(numericForLoop);
                     break;
+                case GenericForLoop genericForLoop:
+                    AnalyzeGenericForLoop(genericForLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
@@ -286,6 +289,45 @@ public class SemanticAnalyzer
         EnterScope();
         _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
         AnalyzeBlock(numericForLoop.block);
+        ExitScope();
+    }
+
+    private void AnalyzeGenericForLoop(GenericForLoop genericForLoop)
+    {
+        var iterator = AnalyzeExpression(genericForLoop.expression).FirstOrDefault() ?? TypeRegistry.NilType;
+
+        EnterScope();
+
+        if (iterator is FunctionType functionType)
+        {
+            for (var i = 0; i < genericForLoop.declarators.Count; i++)
+            {
+                var declarator = genericForLoop.declarators[i];
+                var returnedType = functionType.ReturnTypes.ElementAtOrDefault(i);
+
+                var (name, type) = AnalyzeVariableDeclarator(_local, declarator);
+                if (returnedType is null && type is not NullableType)
+                    _reporter.Report(new Diagnostic(TypeErrors.NullableTypeMismatch, $"Iterator does not return a value for generic for loop variable '{name}' which is not declared nullable", DiagnosticSeverity.Error, declarator.source));
+                else if (returnedType is not null && !type.CanHold(returnedType))
+                {
+                    if (i != 0 || returnedType is not NullableType nullableReturn || !type.CanHold(nullableReturn.InnerType))
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Generic for loop variable '{name}' of type '{type}' does not match iterator return type '{returnedType}'", DiagnosticSeverity.Error, declarator.source));
+                }
+
+                _local.Define(name, type);
+            }
+        }
+        else
+        {
+            foreach (var declarator in genericForLoop.declarators)
+            {
+                var (name, type) = AnalyzeVariableDeclarator(_local, declarator);
+                _local.Define(name, type);
+            }
+        }
+
+        AnalyzeBlock(genericForLoop.block);
+
         ExitScope();
     }
 

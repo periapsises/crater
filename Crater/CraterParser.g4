@@ -16,6 +16,7 @@ statement
     | whileLoop
     | repeatLoop
     | numericForLoop
+    | genericForLoop
     | returnStatement
     ;
 
@@ -51,6 +52,8 @@ whileLoop: WHILE condition=expression DO block END;
 repeatLoop: REPEAT block UNTIL condition=expression;
 
 numericForLoop: FOR variable=IDENTIFIER ASSIGN initializer=expression COMMA limit=expression (COMMA increment=expression)? DO block END;
+
+genericForLoop: FOR variableDeclarator (COMMA variableDeclarator)* IN expression DO block END;
 
 returnStatement: RETURN expressionList?;
 

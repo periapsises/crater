@@ -59,6 +59,9 @@ public class Compiler
                 case NumericForLoop numericForLoop:
                     CompileNumericForLoop(numericForLoop);
                     break;
+                case GenericForLoop genericForLoop:
+                    CompileGenericForLoop(genericForLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
@@ -242,6 +245,29 @@ public class Compiler
 
         _writer.Indent();
         CompileBlock(numericForLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
+    }
+
+    private void CompileGenericForLoop(GenericForLoop genericForLoop)
+    {
+        _writer.Write("for ");
+
+        var declaratorCount = genericForLoop.declarators.Count;
+        for (var i = 0; i < declaratorCount; i++)
+        {
+            _writer.Write(genericForLoop.declarators[i].name);
+            if (i < declaratorCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write(" in ");
+        CompileExpression(genericForLoop.expression);
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(genericForLoop.block);
         _writer.Outdent();
 
         _writer.WriteLine("end");
