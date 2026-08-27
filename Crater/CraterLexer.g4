@@ -15,6 +15,7 @@ RETURN  : 'return';
 WHILE   : 'while';
 REPEAT  : 'repeat';
 UNTIL   : 'until';
+FOR     : 'for';
 
 // Declarations & Scoping
 LOCAL   : 'local';

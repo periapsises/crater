@@ -56,6 +56,9 @@ public class Compiler
                 case RepeatLoop repeatLoop:
                     CompileRepeatLoop(repeatLoop);
                     break;
+                case NumericForLoop numericForLoop:
+                    CompileNumericForLoop(numericForLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
@@ -220,6 +223,28 @@ public class Compiler
         _writer.Write("until ");
         CompileExpression(repeatLoop.condition);
         _writer.WriteLine();
+    }
+
+    private void CompileNumericForLoop(NumericForLoop numericForLoop)
+    {
+        _writer.Write($"for {numericForLoop.variable} = ");
+        CompileExpression(numericForLoop.initializer);
+        _writer.Write(", ");
+        CompileExpression(numericForLoop.limit);
+
+        if (numericForLoop.increment is not null)
+        {
+            _writer.Write(", ");
+            CompileExpression(numericForLoop.increment);
+        }
+
+        _writer.WriteLine(" do");
+
+        _writer.Indent();
+        CompileBlock(numericForLoop.block);
+        _writer.Outdent();
+
+        _writer.WriteLine("end");
     }
 
     private void CompileReturnStatement(ReturnStatement returnStatement)

@@ -15,6 +15,7 @@ statement
     | assignment
     | whileLoop
     | repeatLoop
+    | numericForLoop
     | returnStatement
     ;
 
@@ -48,6 +49,8 @@ assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 whileLoop: WHILE condition=expression DO block END;
 
 repeatLoop: REPEAT block UNTIL condition=expression;
+
+numericForLoop: FOR variable=IDENTIFIER ASSIGN initializer=expression COMMA limit=expression (COMMA increment=expression)? DO block END;
 
 returnStatement: RETURN expressionList?;
 

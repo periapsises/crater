@@ -75,6 +75,9 @@ public class SemanticAnalyzer
                 case RepeatLoop repeatLoop:
                     AnalyzeRepeatLoop(repeatLoop);
                     break;
+                case NumericForLoop numericForLoop:
+                    AnalyzeNumericForLoop(numericForLoop);
+                    break;
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
@@ -260,6 +263,33 @@ public class SemanticAnalyzer
         EnterScope();
         AnalyzeBlock(repeatLoop.block);
         AnalyzeExpression(repeatLoop.condition);
+        ExitScope();
+    }
+
+    private void AnalyzeNumericForLoop(NumericForLoop numericForLoop)
+    {
+        EnterScope();
+        _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
+
+        var initializerType = AnalyzeExpression(numericForLoop.initializer).FirstOrDefault() ?? TypeRegistry.NilType;
+        if (initializerType is not NumberType)
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Initializer for numeric for loop variable must be of type 'number' but got '{initializerType}'", DiagnosticSeverity.Error, numericForLoop.initializer.source));
+
+        var limitType = AnalyzeExpression(numericForLoop.limit).FirstOrDefault() ?? TypeRegistry.NilType;
+        if (limitType is not NumberType)
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Limit for numeric for loop must be of type 'number' but got '{limitType}'", DiagnosticSeverity.Error, numericForLoop.limit.source));
+
+        if (numericForLoop.increment is not null)
+        {
+            var incrementType = AnalyzeExpression(numericForLoop.increment).FirstOrDefault() ?? TypeRegistry.NilType;
+            if (incrementType is NullableType nullableIncrement)
+                incrementType = nullableIncrement.InnerType;
+
+            if (incrementType is not NumberType)
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Increment for numeric for loop must be of type 'number' or 'number?' but got '{incrementType}'", DiagnosticSeverity.Error, numericForLoop.increment.source));
+        }
+
+        AnalyzeBlock(numericForLoop.block);
         ExitScope();
     }
 

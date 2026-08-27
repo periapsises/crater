@@ -198,6 +198,21 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new RepeatLoop(block, condition, Source.FromContext(context));
     }
 
+    public override object VisitNumericForLoop(CraterParser.NumericForLoopContext context)
+    {
+        var variable = context.variable.Text;
+        var initializer = Get<Expression>(context.initializer);
+        var limit = Get<Expression>(context.limit);
+
+        Expression? increment = null;
+        if (context.increment != null)
+            increment = Get<Expression>(context.increment);
+
+        var block = Get<Block>(context.block());
+
+        return new NumericForLoop(variable, initializer, limit, increment, block, Source.FromContext(context));
+    }
+
     public override object VisitReturnStatement(CraterParser.ReturnStatementContext context)
     {
         if (context.expressionList() == null)
