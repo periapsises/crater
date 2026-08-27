@@ -58,4 +58,41 @@ public class ArrayTypeTests
         Assert.That(innerResult, Is.Not.Null);
         Assert.That(innerResult.IsSameType(new NullableType(TypeRegistry.NumberType)));
     }
+
+    [Test]
+    public void CanHoldNestedEmptyArray()
+    {
+        var numberArray = new ArrayType(TypeRegistry.NumberType, TypeRegistry.AnyType);
+        var nestedNumberArray = new ArrayType(numberArray, TypeRegistry.AnyType);
+        var nestedEmptyArray = new ArrayType(new EmptyArrayType(), TypeRegistry.AnyType);
+
+        Assert.That(nestedNumberArray.CanHold(nestedEmptyArray));
+    }
+
+    [Test]
+    public void CanHoldDeeplyNestedEmptyArray()
+    {
+        var numberArray = new ArrayType(TypeRegistry.NumberType, TypeRegistry.AnyType);
+        var nestedNumberArray = new ArrayType(numberArray, TypeRegistry.AnyType);
+        var deeplyNestedNumberArray = new ArrayType(nestedNumberArray, TypeRegistry.AnyType);
+
+        var emptyArray = new EmptyArrayType();
+        var nestedEmptyArray = new ArrayType(emptyArray, TypeRegistry.AnyType);
+        var deeplyNestedEmptyArray = new ArrayType(nestedEmptyArray, TypeRegistry.AnyType);
+
+        Assert.That(deeplyNestedNumberArray.CanHold(deeplyNestedEmptyArray));
+    }
+
+    [Test]
+    public void EmptyNestedArrayCannotHoldConcreteNestedArray()
+    {
+        var emptyArray = new EmptyArrayType();
+        var nestedEmptyArray = new ArrayType(emptyArray, TypeRegistry.AnyType);
+        var emptyNestedArray = new ArrayType(nestedEmptyArray, TypeRegistry.AnyType);
+
+        var numberArray = new ArrayType(TypeRegistry.NumberType, TypeRegistry.AnyType);
+        var nestedNumberArray = new ArrayType(numberArray, TypeRegistry.AnyType);
+
+        Assert.That(!emptyNestedArray.CanHold(nestedNumberArray));
+    }
 }
