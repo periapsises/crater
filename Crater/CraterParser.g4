@@ -23,7 +23,10 @@ functionDeclaration: LOCAL? FUNCTION name=IDENTIFIER LPAREN parameters? RPAREN C
 
 parameters: parameter (COMMA parameter)*;
 
-parameter: name=IDENTIFIER COLON typeName;
+parameter
+    : name=IDENTIFIER COLON typeName    # NamedParameter
+    | VARARGS COLON typeName            # VarargParameter
+    ;
 
 returnTypes: VOID | typeName (COMMA typeName)*;
 

@@ -38,6 +38,8 @@ NOT_EQUAL       : '~=';
 LESSER_EQUAL    : '<=';
 GREATER_EQUAL   : '>=';
 
+VARARGS : '...';
+
 // Single-Character
 PLUS    : '+';
 MINUS   : '-';

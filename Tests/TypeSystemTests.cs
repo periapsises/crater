@@ -68,7 +68,7 @@ public class TypeSystemTests
     [Test]
     public void BaseFunctionCanHoldOtherFunctions()
     {
-        var complexFunction = new FunctionType([TypeRegistry.AnyType], [], TypeRegistry.FunctionType);
+        var complexFunction = new FunctionType([TypeRegistry.AnyType], null, [], TypeRegistry.FunctionType);
 
         Assert.Multiple(() =>
         {
@@ -80,15 +80,15 @@ public class TypeSystemTests
     [Test]
     public void ComplexFunctionsCannotHoldBaseFunctions()
     {
-        var complexFunction = new FunctionType([TypeRegistry.AnyType], [], TypeRegistry.FunctionType);
+        var complexFunction = new FunctionType([TypeRegistry.AnyType], null, [], TypeRegistry.FunctionType);
         Assert.That(!complexFunction.CanHold(TypeRegistry.FunctionType));
     }
 
     [Test]
     public void ComplexFunctionsCanHoldSameSignature()
     {
-        var complexFunctionA = new FunctionType([TypeRegistry.NumberType], [TypeRegistry.StringType], TypeRegistry.FunctionType);
-        var complexFunctionB = new FunctionType([TypeRegistry.NumberType], [TypeRegistry.StringType], TypeRegistry.FunctionType);
+        var complexFunctionA = new FunctionType([TypeRegistry.NumberType], null, [TypeRegistry.StringType], TypeRegistry.FunctionType);
+        var complexFunctionB = new FunctionType([TypeRegistry.NumberType], null, [TypeRegistry.StringType], TypeRegistry.FunctionType);
 
         Assert.That(complexFunctionA.CanHold(complexFunctionB));
     }

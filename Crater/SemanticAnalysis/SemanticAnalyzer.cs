@@ -131,11 +131,15 @@ public class SemanticAnalyzer
         foreach (var parameter in functionDeclaration.parameters)
             parameterTypes.Add(AnalyzeTypeName(parameter.type));
 
+        Type? varargType = null;
+        if (functionDeclaration.varargParameter is not null)
+            varargType = AnalyzeTypeName(functionDeclaration.varargParameter.type);
+
         var returnTypes = new List<Type>();
         foreach (var returnType in functionDeclaration.returnTypes)
             returnTypes.Add(AnalyzeTypeName(returnType));
 
-        env.Define(functionDeclaration.name, new FunctionType(parameterTypes, returnTypes, TypeRegistry.FunctionType));
+        env.Define(functionDeclaration.name, new FunctionType(parameterTypes, varargType, returnTypes, TypeRegistry.FunctionType));
 
         EnterScope();
 
@@ -428,6 +432,15 @@ public class SemanticAnalyzer
                 if (!parameterType.CanHold(argument.Item1))
                     _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Argument #{i + 1} expected '{parameterType}' but got '{argument.Item1}'", DiagnosticSeverity.Error, argument.Item2));
             }
+        }
+
+        if (functionType.VarargType == null)
+            return functionType.ReturnTypes.ToList();
+
+        for (var i = functionType.ParameterTypes.Count; i < argumentTypes.Count; i++)
+        {
+            if (!functionType.VarargType.CanHold(argumentTypes[i].Item1))
+                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot pass value of type '{argumentTypes[i].Item1}' to vararg of type '{functionType.VarargType}'", DiagnosticSeverity.Error, argumentTypes[i].Item2));
         }
 
         return functionType.ReturnTypes.ToList();
