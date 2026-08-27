@@ -161,6 +161,16 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new ElseStatement(block, Source.FromContext(context));
     }
 
+    public override object VisitFunctionCall(CraterParser.FunctionCallContext context)
+    {
+        var function = Get<Expression>(context.expression());
+        if (context.expressionList() == null)
+            return new FunctionCall(function, [], Source.FromContext(context));
+
+        var arguments = Get<List<Expression>>(context.expressionList());
+        return new FunctionCall(function, arguments, Source.FromContext(context));
+    }
+
     public override object VisitAssignment(CraterParser.AssignmentContext context)
     {
         var variables = new List<string>();

@@ -43,6 +43,10 @@ public class Compiler
                 case IfStatement ifStatement:
                     CompileIfStatement(ifStatement);
                     break;
+                case FunctionCall functionCall:
+                    CompileFunctionCall(functionCall);
+                    _writer.WriteLine();
+                    break;
                 case Assignment assignment:
                     CompileAssignment(assignment);
                     break;

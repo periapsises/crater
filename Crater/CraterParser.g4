@@ -11,6 +11,7 @@ statement
     | functionDeclaration
     | doStatement
     | ifStatement
+    | functionCall
     | assignment
     | returnStatement
     ;
@@ -37,6 +38,8 @@ ifStatement: IF expression THEN block (elseIfStatement)* elseStatement? END;
 elseIfStatement: ELSEIF expression THEN block;
 
 elseStatement: ELSE block;
+
+functionCall: expression LPAREN expressionList? RPAREN;
 
 assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
 

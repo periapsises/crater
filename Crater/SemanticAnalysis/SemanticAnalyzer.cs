@@ -61,6 +61,9 @@ public class SemanticAnalyzer
                 case IfStatement ifStatement:
                     blocking |= AnalyzeIfStatement(ifStatement, expectedReturns);
                     break;
+                case FunctionCall functionCall:
+                    AnalyzeFunctionCall(functionCall);
+                    break;
                 case Assignment assignment:
                     AnalyzeAssignment(assignment);
                     break;
