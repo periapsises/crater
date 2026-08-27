@@ -106,6 +106,14 @@ public class Compiler
                 _writer.Write(", ");
         }
 
+        if (functionDeclaration.varargParameter is not null)
+        {
+            if (parameterCount > 0)
+                _writer.Write(", ");
+
+            _writer.Write("...");
+        }
+
         _writer.WriteLine(")");
 
         _writer.Indent();
