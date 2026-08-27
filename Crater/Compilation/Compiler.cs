@@ -74,7 +74,10 @@ public class Compiler
 
         var initializerCount = variableDeclaration.initializers.Count;
         if (initializerCount == 0)
+        {
+            _writer.WriteLine();
             return;
+        }
 
         _writer.Write(" = ");
 
