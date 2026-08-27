@@ -16,6 +16,9 @@ public class ArrayType : Type
         if (other is EmptyArrayType)
             return true;
 
+        if (other is ArrayType otherArray)
+            return ElementType.CanHold(otherArray.ElementType);
+
         return IsSameType(other);
     }
 
