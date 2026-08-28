@@ -58,6 +58,8 @@ public sealed record FunctionCall(Expression function, List<Expression> argument
 
 public sealed record BracketIndexing(Expression prefix, Expression index, Source source) : Expression(source);
 
+public sealed record DotIndexing(Expression prefix, string key, Source source) : Expression(source);
+
 public sealed record UnaryOperation(string op, Expression expression, Source source) : Expression(source);
 
 public sealed record BinaryOperation(Expression left, string op, Expression right, Source source) : Expression(source);

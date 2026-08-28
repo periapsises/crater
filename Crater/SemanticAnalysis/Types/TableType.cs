@@ -31,4 +31,9 @@ public class TableType(IReadOnlyDictionary<string, Type> fields, Type baseType) 
 
         return true;
     }
+
+    public override Type? ResolveMemberAccess(string key)
+    {
+        return Fields.GetValueOrDefault(key);
+    }
 }

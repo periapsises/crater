@@ -57,6 +57,7 @@ SLASH   : '/';
 LESSER  : '<';
 GREATER : '>';
 
+DOT     : '.';
 COMMA   : ',';
 COLON   : ':';
 ASSIGN  : '=';

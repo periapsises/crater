@@ -97,11 +97,14 @@ prefixExpression
 postfixExpression
     : postfixFunctionCall
     | postfixBracketIndexing
+    | postfixDotIndexing
     ;
 
 postfixFunctionCall: LPAREN expressionList? RPAREN;
 
 postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
+
+postfixDotIndexing: DOT IDENTIFIER;
 
 tableValues: tableValue (COMMA tableValue)* COMMA?;
 

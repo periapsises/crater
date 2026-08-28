@@ -452,6 +452,7 @@ public class SemanticAnalyzer
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
             FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
             BracketIndexing bracketIndexing => AnalyzeBracketIndexing(bracketIndexing),
+            DotIndexing dotIndexing => AnalyzeDotIndexing(dotIndexing),
             _ => throw new SwitchExpressionException(expression)
         };
     }
@@ -656,6 +657,18 @@ public class SemanticAnalyzer
 
         // TODO: Error code for indexing not supported
         _reporter.Report(new Diagnostic("0", $"Cannot perform indexing on '{prefixType}'", DiagnosticSeverity.Error, bracketIndexing.source));
+        return [TypeRegistry.UnknownType];
+    }
+
+    private List<Type> AnalyzeDotIndexing(DotIndexing dotIndexing)
+    {
+        var prefixType = AnalyzeExpression(dotIndexing.prefix).FirstOrDefault() ?? TypeRegistry.NilType;
+        var resultType = prefixType.ResolveMemberAccess(dotIndexing.key);
+        if (resultType != null)
+            return [resultType];
+
+        // TODO: Error code for member access not supported
+        _reporter.Report(new Diagnostic("0", $"Cannot perform member access on '{prefixType}'", DiagnosticSeverity.Error, dotIndexing.source));
         return [TypeRegistry.UnknownType];
     }
 

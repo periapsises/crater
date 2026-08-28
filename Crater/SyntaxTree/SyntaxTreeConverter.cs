@@ -424,6 +424,9 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         if (context.postfixBracketIndexing() is { } postfixBracketIndexingContext)
             return BuildPostfixBracketIndexing(postfixBracketIndexingContext, prefix);
 
+        if (context.postfixDotIndexing() is { } postfixDotIndexingContext)
+            return BuildPostfixDotIndexing(postfixDotIndexingContext, prefix);
+
         throw new InvalidOperationException($"Unsupported postfix expression type: {context.GetText()}");
     }
 
@@ -440,5 +443,11 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
     {
         var index = Get<Expression>(context.expression());
         return new BracketIndexing(prefix, index, Source.FromContext(context));
+    }
+
+    private DotIndexing BuildPostfixDotIndexing(CraterParser.PostfixDotIndexingContext context, Expression prefix)
+    {
+        var key = context.IDENTIFIER().GetText();
+        return new DotIndexing(prefix, key, Source.FromContext(context));
     }
 }

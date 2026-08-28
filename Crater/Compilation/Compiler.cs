@@ -339,6 +339,9 @@ public class Compiler
             case FunctionCall functionCall:
                 CompileFunctionCall(functionCall);
                 break;
+            case DotIndexing dotIndexing:
+                CompileDotIndexing(dotIndexing);
+                break;
             default:
                 throw new SwitchExpressionException(expression);
         }
@@ -436,5 +439,11 @@ public class Compiler
         }
 
         _writer.Write(")");
+    }
+
+    private void CompileDotIndexing(DotIndexing dotIndexing)
+    {
+        CompileExpression(dotIndexing.prefix);
+        _writer.Write($".{dotIndexing.key}");
     }
 }
