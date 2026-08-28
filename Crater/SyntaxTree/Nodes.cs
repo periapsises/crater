@@ -66,6 +66,14 @@ public sealed record StringLiteral(string value, Source source) : Expression(sou
 
 public sealed record BooleanLiteral(string value, Source source) : Expression(source);
 
-public sealed record ArrayLiteral(List<Expression> values, Source source) : Expression(source);
+public sealed record TableLiteral(List<TableValue> values, Source source) : Expression(source);
+
+public record TableValue(Source source) : Node(source);
+
+public sealed record StringIndexedField(string index, Expression value, Source source) : TableValue(source);
+
+public sealed record ValueIndexedField(Expression index, Expression value, Source source) : TableValue(source);
+
+public sealed record ArrayField(Expression value, Source source) : TableValue(source);
 
 public sealed record NilLiteral(string value, Source source) : Expression(source);

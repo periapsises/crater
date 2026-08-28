@@ -421,7 +421,7 @@ public class SemanticAnalyzer
             NumberLiteral numberLiteral => AnalyzeNumberLiteral(numberLiteral),
             StringLiteral stringLiteral => AnalyzeStringLiteral(stringLiteral),
             BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
-            ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
+            TableLiteral tableLiteral => AnalyzeTableLiteral(tableLiteral),
             NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
             ParenthesizedExpression parenthesizedExpression => AnalyzeParenthesizedExpression(parenthesizedExpression),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
@@ -497,29 +497,57 @@ public class SemanticAnalyzer
         return [TypeRegistry.BooleanType];
     }
 
-    private List<Type> AnalyzeArrayLiteral(ArrayLiteral arrayLiteral)
+    private List<Type> AnalyzeTableLiteral(TableLiteral tableLiteral)
     {
-        Type? common = null;
+        if (tableLiteral.values.Count == 0)
+            return [new EmptyArrayType()];
 
-        var values = ExpandExpressionList(arrayLiteral.values);
-        foreach (var value in values)
+        var arrayValues = new List<Expression>();
+        var keyedFields = new List<TableValue>();
+
+        foreach (var value in tableLiteral.values)
         {
-            if (common == null)
-                common = value.Item1;
-            else
-                common = Type.GetCommonType(common, value.Item1);
-
-            if (common == null)
+            switch (value)
             {
-                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, $"Could not find a common type for array initializer", DiagnosticSeverity.Error, arrayLiteral.source));
-                break;
+                case ArrayField field:
+                    arrayValues.Add(field.value);
+                    break;
+                case StringIndexedField or ValueIndexedField:
+                    keyedFields.Add(value);
+                    break;
+                default:
+                    throw new SwitchExpressionException(value);
             }
         }
 
-        if (common == null)
-            return [new EmptyArrayType()];
+        if (arrayValues.Count > 0 && keyedFields.Count > 0)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Cannot mix array values and keyed fields in a table literal", DiagnosticSeverity.Error, tableLiteral.source));
+            return [TypeRegistry.UnknownType];
+        }
 
-        return [new ArrayType(common, TypeRegistry.AnyType)];
+        if (keyedFields.Count > 0)
+            // TODO: Implement table type
+            return [TypeRegistry.UnknownType];
+
+        return AnalyzeArrayValues(arrayValues, tableLiteral.source);
+    }
+
+    private List<Type> AnalyzeArrayValues(List<Expression> values, Source source)
+    {
+        Type? common = null;
+        foreach (var (type, valueSource) in ExpandExpressionList(values))
+        {
+            common = common == null ? type : Type.GetCommonType(common, type);
+
+            if (common == null)
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Could not find a common type for array initializer", DiagnosticSeverity.Error, source));
+                return [TypeRegistry.UnknownType];
+            }
+        }
+
+        return [new ArrayType(common!, TypeRegistry.AnyType)];
     }
 
     private List<Type> AnalyzeNilLiteral(NilLiteral nilLiteral)

@@ -75,7 +75,7 @@ expression
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
-    | LBRACKET expressionList? RBRACKET                         # ArrayLiteral
+    | LBRACKET tableValues? RBRACKET                            # TableLiteral
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
     | (TRUE | FALSE)                                            # BooleanLiteral
@@ -96,6 +96,20 @@ postfixExpression
 postfixFunctionCall: LPAREN expressionList? RPAREN;
 
 postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
+
+tableValues: tableValue (COMMA tableValue)* COMMA?;
+
+tableValue
+    : stringIndexedField
+    | valueIndexedField
+    | arrayField
+    ;
+
+stringIndexedField: IDENTIFIER ASSIGN expression;
+
+valueIndexedField: LSQRBRACKET index=expression RSQRBRACKET ASSIGN value=expression;
+
+arrayField: expression;
 
 logicalOperator
     : EQUAL

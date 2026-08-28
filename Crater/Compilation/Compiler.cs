@@ -321,8 +321,8 @@ public class Compiler
             case BooleanLiteral booleanLiteral:
                 CompileBooleanLiteral(booleanLiteral);
                 break;
-            case ArrayLiteral arrayLiteral:
-                CompileArrayLiteral(arrayLiteral);
+            case TableLiteral tableLiteral:
+                CompileTableLiteral(tableLiteral);
                 break;
             case NilLiteral nilLiteral:
                 CompileNilLiteral(nilLiteral);
@@ -369,19 +369,51 @@ public class Compiler
         _writer.Write(booleanLiteral.value);
     }
 
-    private void CompileArrayLiteral(ArrayLiteral arrayLiteral)
+    private void CompileTableLiteral(TableLiteral tableLiteral)
     {
         _writer.Write("{");
 
-        for (var i = 0; i < arrayLiteral.values.Count; i++)
+        for (var i = 0; i < tableLiteral.values.Count; i++)
         {
-            CompileExpression(arrayLiteral.values[i]);
+            switch (tableLiteral.values[i])
+            {
+                case StringIndexedField stringIndexedField:
+                    CompileStringIndexedField(stringIndexedField);
+                    break;
+                case ValueIndexedField valueIndexedField:
+                    CompileValueIndexedField(valueIndexedField);
+                    break;
+                case ArrayField arrayField:
+                    CompileArrayField(arrayField);
+                    break;
+                default:
+                    throw new SwitchExpressionException(tableLiteral.values[i]);
+            }
 
-            if (i < arrayLiteral.values.Count - 1)
+            if (i < tableLiteral.values.Count - 1)
                 _writer.Write(", ");
         }
 
         _writer.Write("}");
+    }
+
+    private void CompileStringIndexedField(StringIndexedField stringIndexedField)
+    {
+        _writer.Write($"{stringIndexedField.index} = ");
+        CompileExpression(stringIndexedField.value);
+    }
+
+    private void CompileValueIndexedField(ValueIndexedField valueIndexedField)
+    {
+        _writer.Write("[");
+        CompileExpression(valueIndexedField.index);
+        _writer.Write("] = ");
+        CompileExpression(valueIndexedField.value);
+    }
+
+    private void CompileArrayField(ArrayField arrayField)
+    {
+        CompileExpression(arrayField.value);
     }
 
     private void CompileNilLiteral(NilLiteral nilLiteral)
