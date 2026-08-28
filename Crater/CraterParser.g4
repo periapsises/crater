@@ -18,6 +18,7 @@ statement
     | numericForLoop
     | genericForLoop
     | returnStatement
+    | breakStatement
     ;
 
 variableDeclaration: LOCAL? variableDeclarator (COMMA variableDeclarator)* (ASSIGN expressionList)?;
@@ -56,6 +57,8 @@ numericForLoop: FOR variable=IDENTIFIER ASSIGN initializer=expression COMMA limi
 genericForLoop: FOR variableDeclarator (COMMA variableDeclarator)* IN expression DO block END;
 
 returnStatement: RETURN expressionList?;
+
+breakStatement: BREAK;
 
 typeName: typeName (QMARK | LSQRBRACKET RSQRBRACKET) | primaryType;
 

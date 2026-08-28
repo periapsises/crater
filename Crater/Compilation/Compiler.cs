@@ -65,6 +65,9 @@ public class Compiler
                 case ReturnStatement returnStatement:
                     CompileReturnStatement(returnStatement);
                     break;
+                case BreakStatement breakStatement:
+                    CompileBreakStatement(breakStatement);
+                    break;
                 default:
                     throw new SwitchExpressionException(statement);
             }
@@ -292,6 +295,11 @@ public class Compiler
         }
 
         _writer.WriteLine();
+    }
+
+    private void CompileBreakStatement(BreakStatement breakStatement)
+    {
+        _writer.WriteLine("break");
     }
 
     private void CompileExpression(Expression expression)

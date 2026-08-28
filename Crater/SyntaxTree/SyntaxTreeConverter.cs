@@ -234,6 +234,11 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new ReturnStatement(returnValues, Source.FromContext(context));
     }
 
+    public override object VisitBreakStatement(CraterParser.BreakStatementContext context)
+    {
+        return new BreakStatement(Source.FromContext(context));
+    }
+
     public override object VisitTypeName(CraterParser.TypeNameContext context)
     {
         if (context.primaryType() != null)

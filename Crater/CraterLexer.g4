@@ -17,6 +17,7 @@ REPEAT  : 'repeat';
 UNTIL   : 'until';
 FOR     : 'for';
 IN      : 'in';
+BREAK   : 'break';
 
 // Declarations & Scoping
 LOCAL   : 'local';

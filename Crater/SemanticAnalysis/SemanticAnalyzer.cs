@@ -16,6 +16,8 @@ public class SemanticAnalyzer
 
     private readonly Dictionary<string, Type> _types;
 
+    private int _loopDepth;
+
     public SemanticAnalyzer(IDiagnosticReporter reporter)
     {
         _reporter = reporter;
@@ -84,6 +86,9 @@ public class SemanticAnalyzer
                 case ReturnStatement returnStatement:
                     AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
+                    break;
+                case BreakStatement breakStatement:
+                    AnalyzeBreakStatement(breakStatement);
                     break;
                 default:
                     throw new SwitchExpressionException(statement);
@@ -159,6 +164,8 @@ public class SemanticAnalyzer
         env.Define(functionDeclaration.name, new FunctionType(parameterTypes, varargType, returnTypes, TypeRegistry.FunctionType));
 
         EnterScope();
+        var previousDepth = _loopDepth;
+        _loopDepth = 0;
 
         for (var i = 0; i < parameterTypes.Count; i++)
         {
@@ -175,6 +182,7 @@ public class SemanticAnalyzer
             // TODO: Error code for when not all paths return
             _reporter.Report(new Diagnostic("0", $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
 
+        _loopDepth = previousDepth;
         ExitScope();
     }
 
@@ -257,15 +265,19 @@ public class SemanticAnalyzer
         AnalyzeExpression(whileLoop.condition);
 
         EnterScope();
+        _loopDepth++;
         AnalyzeBlock(whileLoop.block);
+        _loopDepth--;
         ExitScope();
     }
 
     private void AnalyzeRepeatLoop(RepeatLoop repeatLoop)
     {
         EnterScope();
+        _loopDepth++;
         AnalyzeBlock(repeatLoop.block);
         AnalyzeExpression(repeatLoop.condition);
+        _loopDepth--;
         ExitScope();
     }
 
@@ -287,8 +299,10 @@ public class SemanticAnalyzer
         }
 
         EnterScope();
+        _loopDepth++;
         _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
         AnalyzeBlock(numericForLoop.block);
+        _loopDepth--;
         ExitScope();
     }
 
@@ -297,6 +311,7 @@ public class SemanticAnalyzer
         var iterator = AnalyzeExpression(genericForLoop.expression).FirstOrDefault() ?? TypeRegistry.NilType;
 
         EnterScope();
+        _loopDepth++;
 
         if (iterator is FunctionType functionType)
         {
@@ -328,6 +343,7 @@ public class SemanticAnalyzer
 
         AnalyzeBlock(genericForLoop.block);
 
+        _loopDepth--;
         ExitScope();
     }
 
@@ -354,6 +370,13 @@ public class SemanticAnalyzer
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected a '{expectedType}' value to be returned", DiagnosticSeverity.Error, returnStatement.source));
             }
         }
+    }
+
+    private void AnalyzeBreakStatement(BreakStatement breakStatement)
+    {
+        if (_loopDepth == 0)
+            // TODO: Code for break statement outside loop
+            _reporter.Report(new Diagnostic("0", "Cannot use 'break' outside of a loop", DiagnosticSeverity.Error, breakStatement.source));
     }
 
     private Type AnalyzeTypeName(TypeName typeName)

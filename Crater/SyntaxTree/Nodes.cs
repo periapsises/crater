@@ -36,6 +36,8 @@ public sealed record GenericForLoop(List<VariableDeclarator> declarators, Expres
 
 public sealed record ReturnStatement(List<Expression> returnValues, Source source) : Node(source);
 
+public sealed record BreakStatement(Source source) : Node(source);
+
 public abstract record TypeName(Source source) : Node(source);
 
 public sealed record NamedTypeName(string name, Source source) : TypeName(source);
