@@ -255,9 +255,18 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         throw new Exception($"Unsupported decorated typename '{context.GetText()}'");
     }
 
-    public override object VisitPrimaryType(CraterParser.PrimaryTypeContext context)
+    public override object VisitNamedType(CraterParser.NamedTypeContext context)
     {
         return new NamedTypeName(context.IDENTIFIER().GetText(), Source.FromContext(context));
+    }
+
+    public override object VisitTableDefinition(CraterParser.TableDefinitionContext context)
+    {
+        var fields = new List<VariableDeclarator>();
+        foreach (var variableDeclaratorContext in context.variableDeclarator())
+            fields.Add(Get<VariableDeclarator>(variableDeclaratorContext));
+
+        return new TableTypeName(fields, Source.FromContext(context));
     }
 
     public override object VisitExpressionList(CraterParser.ExpressionListContext context)
@@ -355,6 +364,15 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new TableLiteral(values, Source.FromContext(context));
     }
 
+    public override object VisitArrayLiteral(CraterParser.ArrayLiteralContext context)
+    {
+        if (context.expressionList() == null)
+            return new ArrayLiteral([], Source.FromContext(context));
+
+        var values = Get<List<Expression>>(context.expressionList());
+        return new ArrayLiteral(values, Source.FromContext(context));
+    }
+
     public override object VisitNilLiteral(CraterParser.NilLiteralContext context)
     {
         return new NilLiteral(context.GetText(), Source.FromContext(context));
@@ -390,26 +408,12 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return values;
     }
 
-    public override object VisitStringIndexedField(CraterParser.StringIndexedFieldContext context)
+    public override object VisitTableValue(CraterParser.TableValueContext context)
     {
         var index = context.IDENTIFIER().GetText();
         var value = Get<Expression>(context.expression());
 
-        return new StringIndexedField(index, value, Source.FromContext(context));
-    }
-
-    public override object VisitValueIndexedField(CraterParser.ValueIndexedFieldContext context)
-    {
-        var index = Get<Expression>(context.index);
-        var value = Get<Expression>(context.value);
-
-        return new ValueIndexedField(index, value, Source.FromContext(context));
-    }
-
-    public override object VisitArrayField(CraterParser.ArrayFieldContext context)
-    {
-        var value = Get<Expression>(context.expression());
-        return new ArrayField(value, Source.FromContext(context));
+        return new TableValue(index, value, Source.FromContext(context));
     }
 
     private Expression BuildPostfixExpression(CraterParser.PostfixExpressionContext context, Expression prefix)

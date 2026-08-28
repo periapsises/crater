@@ -46,6 +46,8 @@ public sealed record NullableTypeName(TypeName baseTypeName, Source source) : Ty
 
 public sealed record ArrayTypeName(TypeName baseTypeName, Source source) : TypeName(source);
 
+public sealed record TableTypeName(List<VariableDeclarator> fields, Source source) : TypeName(source);
+
 public abstract record Expression(Source source) : Node(source);
 
 public sealed record ParenthesizedExpression(Expression innerExpression, Source source) : Expression(source);
@@ -68,12 +70,8 @@ public sealed record BooleanLiteral(string value, Source source) : Expression(so
 
 public sealed record TableLiteral(List<TableValue> values, Source source) : Expression(source);
 
-public record TableValue(Source source) : Node(source);
+public sealed record ArrayLiteral(List<Expression> values, Source source) : Expression(source);
 
-public sealed record StringIndexedField(string index, Expression value, Source source) : TableValue(source);
-
-public sealed record ValueIndexedField(Expression index, Expression value, Source source) : TableValue(source);
-
-public sealed record ArrayField(Expression value, Source source) : TableValue(source);
+public sealed record TableValue(string index, Expression value, Source source) : Node(source);
 
 public sealed record NilLiteral(string value, Source source) : Expression(source);

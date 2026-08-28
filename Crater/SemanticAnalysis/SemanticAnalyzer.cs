@@ -115,6 +115,8 @@ public class SemanticAnalyzer
                 {
                     if (initializer.Item1 is NilType)
                         _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                    else if (type is TableType && initializer.Item1 is TableType)
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table does not match the required declaration", DiagnosticSeverity.Error, initializer.Item2));
                     else
                         _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializer.Item1}' is incompatible with the declared type of '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                 }
@@ -255,7 +257,10 @@ public class SemanticAnalyzer
             }
             else if (!variableType.CanHold(valueType.Item1))
             {
-                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
+                if (variableType is TableType && valueType.Item1 is TableType)
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type of '{variable}'", DiagnosticSeverity.Error, valueType.Item2));
+                else
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
     }
@@ -386,6 +391,7 @@ public class SemanticAnalyzer
             NullableTypeName nullableTypeName => AnalyzeNullableTypeName(nullableTypeName),
             ArrayTypeName arrayTypeName => AnalyzeArrayTypeName(arrayTypeName),
             NamedTypeName namedTypeName => AnalyzeNamedTypeName(namedTypeName),
+            TableTypeName tableTypeName => AnalyzeTableTypeName(tableTypeName),
             _ => throw new SwitchExpressionException(typeName)
         };
     }
@@ -412,6 +418,24 @@ public class SemanticAnalyzer
         return TypeRegistry.UnknownType;
     }
 
+    private Type AnalyzeTableTypeName(TableTypeName tableTypeName)
+    {
+        var fields = new Dictionary<string, Type>();
+        foreach (var field in tableTypeName.fields)
+        {
+            var type = AnalyzeTypeName(field.type);
+
+            if (fields.TryAdd(field.name, type))
+                continue;
+
+            // TODO: Error code for duplicate field
+            _reporter.Report(new Diagnostic("0", $"Duplicate field '{field.name}' in table type definition", DiagnosticSeverity.Error, field.source));
+            fields[field.name] = TypeRegistry.UnknownType;
+        }
+
+        return new TableType(fields, TypeRegistry.AnyType);
+    }
+
     private List<Type> AnalyzeExpression(Expression expression)
     {
         return expression switch
@@ -422,6 +446,7 @@ public class SemanticAnalyzer
             StringLiteral stringLiteral => AnalyzeStringLiteral(stringLiteral),
             BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
             TableLiteral tableLiteral => AnalyzeTableLiteral(tableLiteral),
+            ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
             NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
             ParenthesizedExpression parenthesizedExpression => AnalyzeParenthesizedExpression(parenthesizedExpression),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
@@ -499,38 +524,47 @@ public class SemanticAnalyzer
 
     private List<Type> AnalyzeTableLiteral(TableLiteral tableLiteral)
     {
-        if (tableLiteral.values.Count == 0)
-            return [new EmptyArrayType()];
-
-        var arrayValues = new List<Expression>();
-        var keyedFields = new List<TableValue>();
-
+        var fields = new Dictionary<string, Type>();
         foreach (var value in tableLiteral.values)
         {
-            switch (value)
+            var name = value.index;
+            var type = AnalyzeExpression(value.value).FirstOrDefault();
+
+            if (type == null)
             {
-                case ArrayField field:
-                    arrayValues.Add(field.value);
-                    break;
-                case StringIndexedField or ValueIndexedField:
-                    keyedFields.Add(value);
-                    break;
-                default:
-                    throw new SwitchExpressionException(value);
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeResolution, "Could not determine type of value", DiagnosticSeverity.Error, value.value.source));
+                continue;
+            }
+
+            if (fields.TryAdd(name, type))
+                continue;
+
+            // TODO: Error code for duplicate fields in table
+            _reporter.Report(new Diagnostic("0", $"Duplicate field '{name}' in table literal", DiagnosticSeverity.Error, value.source));
+        }
+
+        return [new TableType(fields, TypeRegistry.AnyType)];
+    }
+
+    private List<Type> AnalyzeArrayLiteral(ArrayLiteral arrayLiteral)
+    {
+        if (arrayLiteral.values.Count == 0)
+            return [new EmptyArrayType()];
+
+        Type? common = null;
+        foreach (var value in arrayLiteral.values)
+        {
+            var type = AnalyzeExpression(value).FirstOrDefault() ?? TypeRegistry.NilType;
+            common = common == null ? type : Type.GetCommonType(common, type);
+
+            if (common == null)
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Could not find a common type for array literal", DiagnosticSeverity.Error, arrayLiteral.source));
+                return [TypeRegistry.UnknownType];
             }
         }
 
-        if (arrayValues.Count > 0 && keyedFields.Count > 0)
-        {
-            _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Cannot mix array values and keyed fields in a table literal", DiagnosticSeverity.Error, tableLiteral.source));
-            return [TypeRegistry.UnknownType];
-        }
-
-        if (keyedFields.Count > 0)
-            // TODO: Implement table type
-            return [TypeRegistry.UnknownType];
-
-        return AnalyzeArrayValues(arrayValues, tableLiteral.source);
+        return [new ArrayType(common!, TypeRegistry.AnyType)];
     }
 
     private List<Type> AnalyzeArrayValues(List<Expression> values, Source source)

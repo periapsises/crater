@@ -324,6 +324,9 @@ public class Compiler
             case TableLiteral tableLiteral:
                 CompileTableLiteral(tableLiteral);
                 break;
+            case ArrayLiteral arrayLiteral:
+                CompileArrayLiteral(arrayLiteral);
+                break;
             case NilLiteral nilLiteral:
                 CompileNilLiteral(nilLiteral);
                 break;
@@ -375,20 +378,10 @@ public class Compiler
 
         for (var i = 0; i < tableLiteral.values.Count; i++)
         {
-            switch (tableLiteral.values[i])
-            {
-                case StringIndexedField stringIndexedField:
-                    CompileStringIndexedField(stringIndexedField);
-                    break;
-                case ValueIndexedField valueIndexedField:
-                    CompileValueIndexedField(valueIndexedField);
-                    break;
-                case ArrayField arrayField:
-                    CompileArrayField(arrayField);
-                    break;
-                default:
-                    throw new SwitchExpressionException(tableLiteral.values[i]);
-            }
+            var value = tableLiteral.values[i];
+
+            _writer.Write($"{value.index} = ");
+            CompileExpression(value.value);
 
             if (i < tableLiteral.values.Count - 1)
                 _writer.Write(", ");
@@ -397,23 +390,19 @@ public class Compiler
         _writer.Write("}");
     }
 
-    private void CompileStringIndexedField(StringIndexedField stringIndexedField)
+    private void CompileArrayLiteral(ArrayLiteral arrayLiteral)
     {
-        _writer.Write($"{stringIndexedField.index} = ");
-        CompileExpression(stringIndexedField.value);
-    }
+        _writer.Write("{");
 
-    private void CompileValueIndexedField(ValueIndexedField valueIndexedField)
-    {
-        _writer.Write("[");
-        CompileExpression(valueIndexedField.index);
-        _writer.Write("] = ");
-        CompileExpression(valueIndexedField.value);
-    }
+        for (var i = 0; i < arrayLiteral.values.Count; i++)
+        {
+            CompileExpression(arrayLiteral.values[i]);
 
-    private void CompileArrayField(ArrayField arrayField)
-    {
-        CompileExpression(arrayField.value);
+            if (i < arrayLiteral.values.Count - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write("}");
     }
 
     private void CompileNilLiteral(NilLiteral nilLiteral)
