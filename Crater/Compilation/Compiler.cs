@@ -339,6 +339,9 @@ public class Compiler
             case FunctionCall functionCall:
                 CompileFunctionCall(functionCall);
                 break;
+            case BracketIndexing bracketIndexing:
+                CompileBracketIndexing(bracketIndexing);
+                break;
             case DotIndexing dotIndexing:
                 CompileDotIndexing(dotIndexing);
                 break;
@@ -439,6 +442,14 @@ public class Compiler
         }
 
         _writer.Write(")");
+    }
+
+    private void CompileBracketIndexing(BracketIndexing bracketIndexing)
+    {
+        CompileExpression(bracketIndexing.prefix);
+        _writer.Write("[");
+        CompileExpression(bracketIndexing.index);
+        _writer.Write("]");
     }
 
     private void CompileDotIndexing(DotIndexing dotIndexing)
