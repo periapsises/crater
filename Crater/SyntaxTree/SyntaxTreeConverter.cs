@@ -369,6 +369,12 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return expression;
     }
 
+    public override object VisitParenthesizedExpression(CraterParser.ParenthesizedExpressionContext context)
+    {
+        var innerExpression = Get<Expression>(context.expression());
+        return new ParenthesizedExpression(innerExpression, Source.FromContext(context));
+    }
+
     public override object VisitVariableReference(CraterParser.VariableReferenceContext context)
     {
         var name = context.IDENTIFIER().GetText();

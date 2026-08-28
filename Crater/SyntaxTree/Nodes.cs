@@ -48,6 +48,8 @@ public sealed record ArrayTypeName(TypeName baseTypeName, Source source) : TypeN
 
 public abstract record Expression(Source source) : Node(source);
 
+public sealed record ParenthesizedExpression(Expression innerExpression, Source source) : Expression(source);
+
 public sealed record VariableReference(string name, Source source) : Expression(source);
 
 public sealed record FunctionCall(Expression function, List<Expression> arguments, Source source) : Expression(source);

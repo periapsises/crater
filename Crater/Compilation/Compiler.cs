@@ -327,6 +327,9 @@ public class Compiler
             case NilLiteral nilLiteral:
                 CompileNilLiteral(nilLiteral);
                 break;
+            case ParenthesizedExpression parenthesizedExpression:
+                CompileParenthesizedExpression(parenthesizedExpression);
+                break;
             case VariableReference variableReference:
                 CompileVariableReference(variableReference);
                 break;
@@ -384,6 +387,13 @@ public class Compiler
     private void CompileNilLiteral(NilLiteral nilLiteral)
     {
         _writer.Write(nilLiteral.value);
+    }
+
+    private void CompileParenthesizedExpression(ParenthesizedExpression parenthesizedExpression)
+    {
+        _writer.Write("(");
+        CompileExpression(parenthesizedExpression.innerExpression);
+        _writer.Write(")");
     }
 
     private void CompileVariableReference(VariableReference variableReference)

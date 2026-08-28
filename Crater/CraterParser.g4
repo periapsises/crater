@@ -84,7 +84,9 @@ expression
 
 primaryExpression: prefixExpression postfixExpression*;
 
-prefixExpression: IDENTIFIER # VariableReference;
+prefixExpression
+    : LPAREN expression RPAREN  # ParenthesizedExpression
+    | IDENTIFIER                # VariableReference;
 
 postfixExpression
     : postfixFunctionCall

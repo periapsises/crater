@@ -423,6 +423,7 @@ public class SemanticAnalyzer
             BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
             ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
             NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
+            ParenthesizedExpression parenthesizedExpression => AnalyzeParenthesizedExpression(parenthesizedExpression),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
             FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
             BracketIndexing bracketIndexing => AnalyzeBracketIndexing(bracketIndexing),
@@ -524,6 +525,11 @@ public class SemanticAnalyzer
     private List<Type> AnalyzeNilLiteral(NilLiteral nilLiteral)
     {
         return [TypeRegistry.NilType];
+    }
+
+    private List<Type> AnalyzeParenthesizedExpression(ParenthesizedExpression parenthesizedExpression)
+    {
+        return AnalyzeExpression(parenthesizedExpression.innerExpression);
     }
 
     private List<Type> AnalyzeVariableReference(VariableReference variableReference)
