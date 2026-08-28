@@ -255,9 +255,18 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         throw new Exception($"Unsupported decorated typename '{context.GetText()}'");
     }
 
-    public override object VisitPrimaryType(CraterParser.PrimaryTypeContext context)
+    public override object VisitNamedType(CraterParser.NamedTypeContext context)
     {
         return new NamedTypeName(context.IDENTIFIER().GetText(), Source.FromContext(context));
+    }
+
+    public override object VisitTableDefinition(CraterParser.TableDefinitionContext context)
+    {
+        var fields = new List<VariableDeclarator>();
+        foreach (var variableDeclaratorContext in context.variableDeclarator())
+            fields.Add(Get<VariableDeclarator>(variableDeclaratorContext));
+
+        return new TableTypeName(fields, Source.FromContext(context));
     }
 
     public override object VisitExpressionList(CraterParser.ExpressionListContext context)
@@ -346,6 +355,15 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new BooleanLiteral(context.GetText(), Source.FromContext(context));
     }
 
+    public override object VisitTableLiteral(CraterParser.TableLiteralContext context)
+    {
+        if (context.tableValues() == null)
+            return new TableLiteral([], Source.FromContext(context));
+
+        var values = Get<List<TableValue>>(context.tableValues());
+        return new TableLiteral(values, Source.FromContext(context));
+    }
+
     public override object VisitArrayLiteral(CraterParser.ArrayLiteralContext context)
     {
         if (context.expressionList() == null)
@@ -381,6 +399,23 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new VariableReference(name, Source.FromContext(context));
     }
 
+    public override object VisitTableValues(CraterParser.TableValuesContext context)
+    {
+        var values = new List<TableValue>();
+        foreach (var tableValueContext in context.tableValue())
+            values.Add(Get<TableValue>(tableValueContext));
+
+        return values;
+    }
+
+    public override object VisitTableValue(CraterParser.TableValueContext context)
+    {
+        var index = context.IDENTIFIER().GetText();
+        var value = Get<Expression>(context.expression());
+
+        return new TableValue(index, value, Source.FromContext(context));
+    }
+
     private Expression BuildPostfixExpression(CraterParser.PostfixExpressionContext context, Expression prefix)
     {
         if (context.postfixFunctionCall() is { } postfixFunctionCallContext)
@@ -388,6 +423,9 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
 
         if (context.postfixBracketIndexing() is { } postfixBracketIndexingContext)
             return BuildPostfixBracketIndexing(postfixBracketIndexingContext, prefix);
+
+        if (context.postfixDotIndexing() is { } postfixDotIndexingContext)
+            return BuildPostfixDotIndexing(postfixDotIndexingContext, prefix);
 
         throw new InvalidOperationException($"Unsupported postfix expression type: {context.GetText()}");
     }
@@ -405,5 +443,11 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
     {
         var index = Get<Expression>(context.expression());
         return new BracketIndexing(prefix, index, Source.FromContext(context));
+    }
+
+    private DotIndexing BuildPostfixDotIndexing(CraterParser.PostfixDotIndexingContext context, Expression prefix)
+    {
+        var key = context.IDENTIFIER().GetText();
+        return new DotIndexing(prefix, key, Source.FromContext(context));
     }
 }

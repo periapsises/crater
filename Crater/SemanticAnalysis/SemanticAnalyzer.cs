@@ -115,6 +115,8 @@ public class SemanticAnalyzer
                 {
                     if (initializer.Item1 is NilType)
                         _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to '{name}' as it is declared with the non-nullable type '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
+                    else if (type is TableType && initializer.Item1 is TableType)
+                        _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table does not match the required declaration", DiagnosticSeverity.Error, initializer.Item2));
                     else
                         _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The value assigned to '{name}' of type '{initializer.Item1}' is incompatible with the declared type of '{type}'", DiagnosticSeverity.Error, variableDeclaration.source));
                 }
@@ -255,7 +257,10 @@ public class SemanticAnalyzer
             }
             else if (!variableType.CanHold(valueType.Item1))
             {
-                _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
+                if (variableType is TableType && valueType.Item1 is TableType)
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type of '{variable}'", DiagnosticSeverity.Error, valueType.Item2));
+                else
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
     }
@@ -386,6 +391,7 @@ public class SemanticAnalyzer
             NullableTypeName nullableTypeName => AnalyzeNullableTypeName(nullableTypeName),
             ArrayTypeName arrayTypeName => AnalyzeArrayTypeName(arrayTypeName),
             NamedTypeName namedTypeName => AnalyzeNamedTypeName(namedTypeName),
+            TableTypeName tableTypeName => AnalyzeTableTypeName(tableTypeName),
             _ => throw new SwitchExpressionException(typeName)
         };
     }
@@ -412,6 +418,24 @@ public class SemanticAnalyzer
         return TypeRegistry.UnknownType;
     }
 
+    private Type AnalyzeTableTypeName(TableTypeName tableTypeName)
+    {
+        var fields = new Dictionary<string, Type>();
+        foreach (var field in tableTypeName.fields)
+        {
+            var type = AnalyzeTypeName(field.type);
+
+            if (fields.TryAdd(field.name, type))
+                continue;
+
+            // TODO: Error code for duplicate field
+            _reporter.Report(new Diagnostic("0", $"Duplicate field '{field.name}' in table type definition", DiagnosticSeverity.Error, field.source));
+            fields[field.name] = TypeRegistry.UnknownType;
+        }
+
+        return new TableType(fields, TypeRegistry.AnyType);
+    }
+
     private List<Type> AnalyzeExpression(Expression expression)
     {
         return expression switch
@@ -421,12 +445,14 @@ public class SemanticAnalyzer
             NumberLiteral numberLiteral => AnalyzeNumberLiteral(numberLiteral),
             StringLiteral stringLiteral => AnalyzeStringLiteral(stringLiteral),
             BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
+            TableLiteral tableLiteral => AnalyzeTableLiteral(tableLiteral),
             ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
             NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
             ParenthesizedExpression parenthesizedExpression => AnalyzeParenthesizedExpression(parenthesizedExpression),
             VariableReference variableReference => AnalyzeVariableReference(variableReference),
             FunctionCall functionCall => AnalyzeFunctionCall(functionCall),
             BracketIndexing bracketIndexing => AnalyzeBracketIndexing(bracketIndexing),
+            DotIndexing dotIndexing => AnalyzeDotIndexing(dotIndexing),
             _ => throw new SwitchExpressionException(expression)
         };
     }
@@ -497,29 +523,66 @@ public class SemanticAnalyzer
         return [TypeRegistry.BooleanType];
     }
 
+    private List<Type> AnalyzeTableLiteral(TableLiteral tableLiteral)
+    {
+        var fields = new Dictionary<string, Type>();
+        foreach (var value in tableLiteral.values)
+        {
+            var name = value.index;
+            var type = AnalyzeExpression(value.value).FirstOrDefault();
+
+            if (type == null)
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeResolution, "Could not determine type of value", DiagnosticSeverity.Error, value.value.source));
+                continue;
+            }
+
+            if (fields.TryAdd(name, type))
+                continue;
+
+            // TODO: Error code for duplicate fields in table
+            _reporter.Report(new Diagnostic("0", $"Duplicate field '{name}' in table literal", DiagnosticSeverity.Error, value.source));
+        }
+
+        return [new TableType(fields, TypeRegistry.AnyType)];
+    }
+
     private List<Type> AnalyzeArrayLiteral(ArrayLiteral arrayLiteral)
     {
-        Type? common = null;
+        if (arrayLiteral.values.Count == 0)
+            return [new EmptyArrayType()];
 
-        var values = ExpandExpressionList(arrayLiteral.values);
-        foreach (var value in values)
+        Type? common = null;
+        foreach (var value in arrayLiteral.values)
         {
-            if (common == null)
-                common = value.Item1;
-            else
-                common = Type.GetCommonType(common, value.Item1);
+            var type = AnalyzeExpression(value).FirstOrDefault() ?? TypeRegistry.NilType;
+            common = common == null ? type : Type.GetCommonType(common, type);
 
             if (common == null)
             {
-                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, $"Could not find a common type for array initializer", DiagnosticSeverity.Error, arrayLiteral.source));
-                break;
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Could not find a common type for array literal", DiagnosticSeverity.Error, arrayLiteral.source));
+                return [TypeRegistry.UnknownType];
             }
         }
 
-        if (common == null)
-            return [new EmptyArrayType()];
+        return [new ArrayType(common!, TypeRegistry.AnyType)];
+    }
 
-        return [new ArrayType(common, TypeRegistry.AnyType)];
+    private List<Type> AnalyzeArrayValues(List<Expression> values, Source source)
+    {
+        Type? common = null;
+        foreach (var (type, valueSource) in ExpandExpressionList(values))
+        {
+            common = common == null ? type : Type.GetCommonType(common, type);
+
+            if (common == null)
+            {
+                _reporter.Report(new Diagnostic(TypeErrors.FailedTypeInference, "Could not find a common type for array initializer", DiagnosticSeverity.Error, source));
+                return [TypeRegistry.UnknownType];
+            }
+        }
+
+        return [new ArrayType(common!, TypeRegistry.AnyType)];
     }
 
     private List<Type> AnalyzeNilLiteral(NilLiteral nilLiteral)
@@ -594,6 +657,18 @@ public class SemanticAnalyzer
 
         // TODO: Error code for indexing not supported
         _reporter.Report(new Diagnostic("0", $"Cannot perform indexing on '{prefixType}'", DiagnosticSeverity.Error, bracketIndexing.source));
+        return [TypeRegistry.UnknownType];
+    }
+
+    private List<Type> AnalyzeDotIndexing(DotIndexing dotIndexing)
+    {
+        var prefixType = AnalyzeExpression(dotIndexing.prefix).FirstOrDefault() ?? TypeRegistry.NilType;
+        var resultType = prefixType.ResolveMemberAccess(dotIndexing.key);
+        if (resultType != null)
+            return [resultType];
+
+        // TODO: Error code for member access not supported
+        _reporter.Report(new Diagnostic("0", $"Cannot perform member access on '{prefixType}'", DiagnosticSeverity.Error, dotIndexing.source));
         return [TypeRegistry.UnknownType];
     }
 

@@ -114,5 +114,10 @@ public abstract class Type(string name, Type? baseType = null)
         return null;
     }
 
+    public virtual Type? ResolveMemberAccess(string key)
+    {
+        return null;
+    }
+
     public override string ToString() => GetName();
 }

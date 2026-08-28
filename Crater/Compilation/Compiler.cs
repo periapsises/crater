@@ -321,6 +321,9 @@ public class Compiler
             case BooleanLiteral booleanLiteral:
                 CompileBooleanLiteral(booleanLiteral);
                 break;
+            case TableLiteral tableLiteral:
+                CompileTableLiteral(tableLiteral);
+                break;
             case ArrayLiteral arrayLiteral:
                 CompileArrayLiteral(arrayLiteral);
                 break;
@@ -335,6 +338,12 @@ public class Compiler
                 break;
             case FunctionCall functionCall:
                 CompileFunctionCall(functionCall);
+                break;
+            case BracketIndexing bracketIndexing:
+                CompileBracketIndexing(bracketIndexing);
+                break;
+            case DotIndexing dotIndexing:
+                CompileDotIndexing(dotIndexing);
                 break;
             default:
                 throw new SwitchExpressionException(expression);
@@ -367,6 +376,24 @@ public class Compiler
     private void CompileBooleanLiteral(BooleanLiteral booleanLiteral)
     {
         _writer.Write(booleanLiteral.value);
+    }
+
+    private void CompileTableLiteral(TableLiteral tableLiteral)
+    {
+        _writer.Write("{");
+
+        for (var i = 0; i < tableLiteral.values.Count; i++)
+        {
+            var value = tableLiteral.values[i];
+
+            _writer.Write($"{value.index} = ");
+            CompileExpression(value.value);
+
+            if (i < tableLiteral.values.Count - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.Write("}");
     }
 
     private void CompileArrayLiteral(ArrayLiteral arrayLiteral)
@@ -415,5 +442,19 @@ public class Compiler
         }
 
         _writer.Write(")");
+    }
+
+    private void CompileBracketIndexing(BracketIndexing bracketIndexing)
+    {
+        CompileExpression(bracketIndexing.prefix);
+        _writer.Write("[");
+        CompileExpression(bracketIndexing.index);
+        _writer.Write("]");
+    }
+
+    private void CompileDotIndexing(DotIndexing dotIndexing)
+    {
+        CompileExpression(dotIndexing.prefix);
+        _writer.Write($".{dotIndexing.key}");
     }
 }

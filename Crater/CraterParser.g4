@@ -62,7 +62,12 @@ breakStatement: BREAK;
 
 typeName: typeName (QMARK | LSQRBRACKET RSQRBRACKET) | primaryType;
 
-primaryType: IDENTIFIER;
+primaryType
+    : IDENTIFIER        # NamedType
+    | tableDefinition   # TableType
+    ;
+
+tableDefinition: LBRACKET (variableDeclarator (COMMA variableDeclarator)*)? RBRACKET;
 
 expressionList: expression (COMMA expression)*;
 
@@ -75,6 +80,7 @@ expression
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
+    | LBRACKET tableValues? RBRACKET                            # TableLiteral
     | LBRACKET expressionList? RBRACKET                         # ArrayLiteral
     | NUMBER                                                    # NumberLiteral
     | STRING                                                    # StringLiteral
@@ -91,11 +97,18 @@ prefixExpression
 postfixExpression
     : postfixFunctionCall
     | postfixBracketIndexing
+    | postfixDotIndexing
     ;
 
 postfixFunctionCall: LPAREN expressionList? RPAREN;
 
 postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
+
+postfixDotIndexing: DOT IDENTIFIER;
+
+tableValues: tableValue (COMMA tableValue)* COMMA?;
+
+tableValue: IDENTIFIER ASSIGN expression;
 
 logicalOperator
     : EQUAL
