@@ -68,6 +68,7 @@ expression
     | op=(MINUS | NOT) expression                               # UnaryExpression
     | left=expression operator=(STAR | SLASH) right=expression  # MultiplicativeOperation
     | left=expression operator=(PLUS | MINUS) right=expression  # AdditiveOperation
+    | left=expression CONCAT right=expression                   # ConcatenationOperation
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation

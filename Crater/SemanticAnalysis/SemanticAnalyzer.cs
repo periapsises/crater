@@ -438,11 +438,23 @@ public class SemanticAnalyzer
         var leftType = AnalyzeExpression(binaryOperation.left).FirstOrDefault() ?? TypeRegistry.NilType;
         var rightType = AnalyzeExpression(binaryOperation.right).FirstOrDefault() ?? TypeRegistry.NilType;
 
+        if (binaryOperation.op == "..")
+            return AnalyzeConcatenationOperation(binaryOperation, leftType, rightType);
+
         var resultType = leftType.ResolveBinaryOperation(binaryOperation.op, rightType);
         if (resultType != null)
             return [resultType];
 
         _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot perform binary operation '{binaryOperation.op}' on types '{leftType}' and '{rightType}'", DiagnosticSeverity.Error, binaryOperation.source));
+        return [TypeRegistry.UnknownType];
+    }
+
+    private List<Type> AnalyzeConcatenationOperation(BinaryOperation operation, Type left, Type right)
+    {
+        if (left is StringType or NumberType && right is StringType or NumberType)
+            return [TypeRegistry.StringType];
+
+        _reporter.Report(new Diagnostic(TypeErrors.UnsupportedBinaryOperation, $"Cannot concatenate '{left}' with '{right}'", DiagnosticSeverity.Error, operation.source));
         return [TypeRegistry.UnknownType];
     }
 

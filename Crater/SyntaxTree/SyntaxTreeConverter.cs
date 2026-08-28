@@ -290,6 +290,15 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new BinaryOperation(left, op, right, Source.FromContext(context));
     }
 
+    public override object VisitConcatenationOperation(CraterParser.ConcatenationOperationContext context)
+    {
+        var left = Get<Expression>(context.left);
+        var right = Get<Expression>(context.right);
+        var op = context.CONCAT().GetText();
+
+        return new BinaryOperation(left, op, right, Source.FromContext(context));
+    }
+
     public override object VisitLogicalOperation(CraterParser.LogicalOperationContext context)
     {
         var left = Get<Expression>(context.left);

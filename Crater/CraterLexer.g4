@@ -43,6 +43,8 @@ NOT_EQUAL       : '~=';
 LESSER_EQUAL    : '<=';
 GREATER_EQUAL   : '>=';
 
+CONCAT  : '..';
+
 VARARGS : '...';
 
 // Single-Character
