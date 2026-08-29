@@ -181,8 +181,7 @@ public class SemanticAnalyzer
 
         var blocked = AnalyzeBlock(functionDeclaration.block, returnTypes);
         if (!blocked && returnTypes.Count != 0)
-            // TODO: Error code for when not all paths return
-            _reporter.Report(new Diagnostic("0", $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
+            _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
 
         _loopDepth = previousDepth;
         ExitScope();
@@ -278,8 +277,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return resultType;
 
-        // TODO: Error code for indexing not supported
-        _reporter.Report(new Diagnostic("0", $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, arrayStorage.source));
+        _reporter.Report(new Diagnostic(TypeErrors.IndexingNotImplemented, $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, arrayStorage.source));
         return TypeRegistry.UnknownType;
     }
 
@@ -290,8 +288,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return resultType;
 
-        // TODO: Error code for indexing not supported
-        _reporter.Report(new Diagnostic("0", $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, memberStorage.source));
+        _reporter.Report(new Diagnostic(TypeErrors.IndexingNotImplemented, $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, memberStorage.source));
         return TypeRegistry.UnknownType;
     }
 
@@ -411,7 +408,6 @@ public class SemanticAnalyzer
             }
             else if (expectedType is not NullableType)
             {
-                // TODO: Determine if a custom code is needed
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected a '{expectedType}' value to be returned", DiagnosticSeverity.Error, returnStatement.source));
             }
         }
@@ -420,8 +416,7 @@ public class SemanticAnalyzer
     private void AnalyzeBreakStatement(BreakStatement breakStatement)
     {
         if (_loopDepth == 0)
-            // TODO: Code for break statement outside loop
-            _reporter.Report(new Diagnostic("0", "Cannot use 'break' outside of a loop", DiagnosticSeverity.Error, breakStatement.source));
+            _reporter.Report(new Diagnostic(SyntaxErrors.BreakOutsideOfLoop, "Cannot use 'break' outside of a loop", DiagnosticSeverity.Error, breakStatement.source));
     }
 
     private Type AnalyzeTypeName(TypeName typeName)
@@ -468,8 +463,7 @@ public class SemanticAnalyzer
             if (fields.TryAdd(field.name, type))
                 continue;
 
-            // TODO: Error code for duplicate field
-            _reporter.Report(new Diagnostic("0", $"Duplicate field '{field.name}' in table type definition", DiagnosticSeverity.Error, field.source));
+            _reporter.Report(new Diagnostic(SyntaxErrors.DuplicateField, $"Duplicate field '{field.name}' in table type definition", DiagnosticSeverity.Error, field.source));
             fields[field.name] = TypeRegistry.UnknownType;
         }
 
@@ -580,8 +574,7 @@ public class SemanticAnalyzer
             if (fields.TryAdd(name, type))
                 continue;
 
-            // TODO: Error code for duplicate fields in table
-            _reporter.Report(new Diagnostic("0", $"Duplicate field '{name}' in table literal", DiagnosticSeverity.Error, value.source));
+            _reporter.Report(new Diagnostic(SyntaxErrors.DuplicateField, $"Duplicate field '{name}' in table literal", DiagnosticSeverity.Error, value.source));
         }
 
         return [new TableType(fields, TypeRegistry.AnyType)];
@@ -650,8 +643,7 @@ public class SemanticAnalyzer
         var prefixType = AnalyzeExpression(functionCall.function).FirstOrDefault() ?? TypeRegistry.NilType;
         if (prefixType is not FunctionType functionType)
         {
-            // TODO: Error code for call on a non function call
-            _reporter.Report(new Diagnostic("0", $"Attempt to call a '{prefixType}' value", DiagnosticSeverity.Error, functionCall.source));
+            _reporter.Report(new Diagnostic(TypeErrors.NotCallableType, $"Attempt to call a '{prefixType}' value", DiagnosticSeverity.Error, functionCall.source));
             return [TypeRegistry.UnknownType];
         }
 
@@ -663,8 +655,7 @@ public class SemanticAnalyzer
             if (i >= argumentTypes.Count)
             {
                 if (parameterType is not NullableType)
-                    // TODO: Error code for missing argument
-                    _reporter.Report(new Diagnostic("0", $"Missing argument #{i + 1}. Expecting '{parameterType}'", DiagnosticSeverity.Error, functionCall.source));
+                    _reporter.Report(new Diagnostic(TypeErrors.MissingArgument, $"Missing argument #{i + 1}. Expecting '{parameterType}'", DiagnosticSeverity.Error, functionCall.source));
             }
             else
             {
@@ -695,8 +686,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return [resultType];
 
-        // TODO: Error code for indexing not supported
-        _reporter.Report(new Diagnostic("0", $"Cannot perform indexing on '{prefixType}'", DiagnosticSeverity.Error, bracketIndexing.source));
+        _reporter.Report(new Diagnostic(TypeErrors.IndexingNotImplemented, $"Cannot perform indexing on '{prefixType}'", DiagnosticSeverity.Error, bracketIndexing.source));
         return [TypeRegistry.UnknownType];
     }
 
@@ -707,8 +697,7 @@ public class SemanticAnalyzer
         if (resultType != null)
             return [resultType];
 
-        // TODO: Error code for member access not supported
-        _reporter.Report(new Diagnostic("0", $"Cannot perform member access on '{prefixType}'", DiagnosticSeverity.Error, dotIndexing.source));
+        _reporter.Report(new Diagnostic(TypeErrors.MemberAccessNotImplemented, $"Cannot perform member access on '{prefixType}'", DiagnosticSeverity.Error, dotIndexing.source));
         return [TypeRegistry.UnknownType];
     }
 

@@ -1,6 +1,7 @@
 using Antlr4.Runtime;
 using Crater.Antlr;
 using Crater.Diagnostics;
+using Crater.Diagnostics.Codes;
 
 namespace Crater.SyntaxTree;
 
@@ -76,8 +77,7 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
                 continue;
 
             if (i != parameters.Count - 1)
-                // TODO: Error code for invalid vararg position
-                _reporter.Report(new Diagnostic("0", $"Vararg parameter must be the last parameter in a function declaration", DiagnosticSeverity.Error, varargParam.source));
+                _reporter.Report(new Diagnostic(SyntaxErrors.InvalidVarargPlacement, $"Vararg parameter must be the last parameter in a function declaration", DiagnosticSeverity.Error, varargParam.source));
 
             varargParameter = varargParam;
         }

@@ -14,4 +14,9 @@ public static class TypeErrors
     public const string InvalidCast = "CRA209";
     public const string FailedTypeResolution = "CRA210";
     public const string FailedTypeInference = "CRA211";
+    public const string NotAllPathsReturn = "CRA212";
+    public const string NotCallableType = "CRA213";
+    public const string IndexingNotImplemented = "CRA214";
+    public const string MemberAccessNotImplemented = "CRA215";
+    public const string MissingArgument = "CRA216";
 }
