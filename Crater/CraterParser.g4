@@ -46,7 +46,13 @@ elseStatement: ELSE block;
 
 functionCall: expression LPAREN expressionList? RPAREN;
 
-assignment: IDENTIFIER (COMMA IDENTIFIER)? ASSIGN expressionList;
+assignment: storageType (COMMA storageType)? ASSIGN expressionList;
+
+storageType
+    : storageType LSQRBRACKET expression RSQRBRACKET # ArrayStorage
+    | storageType DOT IDENTIFIER                     # MemberStorgage
+    | IDENTIFIER                                     # VariableStorage
+    ;
 
 whileLoop: WHILE condition=expression DO block END;
 

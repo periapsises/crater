@@ -24,7 +24,15 @@ public sealed record ElseIfStatement(Expression condition, Block block, Source s
 
 public sealed record ElseStatement(Block block, Source source) : Node(source);
 
-public sealed record Assignment(List<string> variables, List<Expression> values, Source source) : Node(source);
+public sealed record Assignment(List<StorageType> variables, List<Expression> values, Source source) : Node(source);
+
+public abstract record StorageType(Source source) : Node(source);
+
+public sealed record ArrayStorage(StorageType prefix, Expression index, Source source) : StorageType(source);
+
+public sealed record MemberStorage(StorageType prefix, string key, Source source) : StorageType(source);
+
+public sealed record VariableStorage(string name, Source source) : StorageType(source);
 
 public sealed record WhileLoop(Expression condition, Block block, Source source) : Node(source);
 

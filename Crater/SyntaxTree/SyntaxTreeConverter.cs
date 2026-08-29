@@ -174,13 +174,35 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
 
     public override object VisitAssignment(CraterParser.AssignmentContext context)
     {
-        var variables = new List<string>();
-        foreach (var identifier in context.IDENTIFIER())
-            variables.Add(identifier.GetText());
+        var variables = new List<StorageType>();
+        foreach (var storageTypeContext in context.storageType())
+            variables.Add(Get<StorageType>(storageTypeContext));
 
         var values = Get<List<Expression>>(context.expressionList());
 
         return new Assignment(variables, values, Source.FromContext(context));
+    }
+
+    public override object VisitArrayStorage(CraterParser.ArrayStorageContext context)
+    {
+        var prefix = Get<StorageType>(context.storageType());
+        var index = Get<Expression>(context.expression());
+
+        return new ArrayStorage(prefix, index, Source.FromContext(context));
+    }
+
+    public override object VisitMemberStorgage(CraterParser.MemberStorgageContext context)
+    {
+        var prefix = Get<StorageType>(context.storageType());
+        var key = context.IDENTIFIER().GetText();
+
+        return new MemberStorage(prefix, key, Source.FromContext(context));
+    }
+
+    public override object VisitVariableStorage(CraterParser.VariableStorageContext context)
+    {
+        var name = context.IDENTIFIER().GetText();
+        return new VariableStorage(name, Source.FromContext(context));
     }
 
     public override object VisitWhileLoop(CraterParser.WhileLoopContext context)

@@ -184,7 +184,7 @@ public class Compiler
         var variableCount = assignment.variables.Count;
         for (var i = 0; i < variableCount; i++)
         {
-            _writer.Write(assignment.variables[i]);
+            CompileStorageType(assignment.variables[i]);
             if (i < variableCount - 1)
                 _writer.Write(", ");
         }
@@ -203,6 +203,43 @@ public class Compiler
         }
 
         _writer.WriteLine();
+    }
+
+    private void CompileStorageType(StorageType storageType)
+    {
+        switch (storageType)
+        {
+            case ArrayStorage arrayStorage:
+                CompileArrayStorage(arrayStorage);
+                break;
+            case MemberStorage memberStorage:
+                CompileMemberStorage(memberStorage);
+                break;
+            case VariableStorage variableStorage:
+                CompileVariableStorage(variableStorage);
+                break;
+            default:
+                throw new SwitchExpressionException(storageType);
+        }
+    }
+
+    private void CompileArrayStorage(ArrayStorage arrayStorage)
+    {
+        CompileStorageType(arrayStorage.prefix);
+        _writer.Write("[");
+        CompileExpression(arrayStorage.index);
+        _writer.Write("]");
+    }
+
+    private void CompileMemberStorage(MemberStorage memberStorage)
+    {
+        CompileStorageType(memberStorage.prefix);
+        _writer.Write($".{memberStorage.key}");
+    }
+
+    private void CompileVariableStorage(VariableStorage variableStorage)
+    {
+        _writer.Write(variableStorage.name);
     }
 
     private void CompileWhileLoop(WhileLoop whileLoop)

@@ -240,29 +240,69 @@ public class SemanticAnalyzer
 
         for (var i = 0; i < assignment.variables.Count; i++)
         {
-            var variable = assignment.variables[i];
-
-            var variableType = _local.GetType(variable);
-            if (variableType == null)
-            {
-                _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variable}' does not exist in the current context", DiagnosticSeverity.Error, assignment.source));
-                return;
-            }
+            var variableType = AnalyzeStorageType(assignment.variables[i]);
 
             var valueType = assignedTypes.ElementAtOrDefault(i);
             if (valueType.Item1 == null)
             {
                 if (variableType is not NullableType)
-                    _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to non-nullable value '{variable}'", DiagnosticSeverity.Error, assignment.source));
+                    _reporter.Report(new Diagnostic(TypeErrors.NilAssignment, $"Cannot assign nil to non-nullable '{variableType}'", DiagnosticSeverity.Error, assignment.source));
             }
             else if (!variableType.CanHold(valueType.Item1))
             {
                 if (variableType is TableType && valueType.Item1 is TableType)
-                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type of '{variable}'", DiagnosticSeverity.Error, valueType.Item2));
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type'", DiagnosticSeverity.Error, valueType.Item2));
                 else
                     _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
         }
+    }
+
+    private Type AnalyzeStorageType(StorageType storageType)
+    {
+        return storageType switch
+        {
+            ArrayStorage arrayStorage => AnalyzeArrayStorage(arrayStorage),
+            MemberStorage memberStorage => AnalyzeMemberStorage(memberStorage),
+            VariableStorage variableStorage => AnalyzeVariableStorage(variableStorage),
+            _ => throw new SwitchExpressionException(storageType)
+        };
+    }
+
+    private Type AnalyzeArrayStorage(ArrayStorage arrayStorage)
+    {
+        var prefixType = AnalyzeStorageType(arrayStorage.prefix);
+        var indexType = AnalyzeExpression(arrayStorage.index).FirstOrDefault() ?? TypeRegistry.NilType;
+
+        var resultType = prefixType.ResolveIndex(indexType);
+        if (resultType != null)
+            return resultType;
+
+        // TODO: Error code for indexing not supported
+        _reporter.Report(new Diagnostic("0", $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, arrayStorage.source));
+        return TypeRegistry.UnknownType;
+    }
+
+    private Type AnalyzeMemberStorage(MemberStorage memberStorage)
+    {
+        var prefixType = AnalyzeStorageType(memberStorage.prefix);
+        var resultType = prefixType.ResolveMemberAccess(memberStorage.key);
+        if (resultType != null)
+            return resultType;
+
+        // TODO: Error code for indexing not supported
+        _reporter.Report(new Diagnostic("0", $"Cannot index a value of type '{prefixType}'", DiagnosticSeverity.Error, memberStorage.source));
+        return TypeRegistry.UnknownType;
+    }
+
+    private Type AnalyzeVariableStorage(VariableStorage variableStorage)
+    {
+        var variableType = _local.GetType(variableStorage.name);
+        if (variableType != null)
+            return variableType;
+
+        _reporter.Report(new Diagnostic(NameResolution.UndefinedVariable, $"Variable '{variableStorage.name}' does not exist in the current context", DiagnosticSeverity.Error, variableStorage.source));
+        return TypeRegistry.UnknownType;
     }
 
     private void AnalyzeWhileLoop(WhileLoop whileLoop)
