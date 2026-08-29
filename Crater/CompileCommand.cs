@@ -7,6 +7,7 @@ using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using Environment = System.Environment;
 
 namespace Crater;
 
@@ -44,8 +45,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(settings.outputDirectory))
-            Directory.CreateDirectory(settings.outputDirectory);
+        var targetFullPath = Path.GetFullPath(settings.target);
 
         var exitCode = 0;
 
@@ -80,13 +80,23 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 var output = Compiler.Compile(program);
 
+                var fullSourcePath = Path.GetFullPath(sourceFile);
+
                 string outputDirectory;
                 if (string.IsNullOrEmpty(settings.outputDirectory))
-                    outputDirectory = Path.GetDirectoryName(sourceFile) ?? string.Empty;
+                {
+                    outputDirectory = Path.GetDirectoryName(fullSourcePath) ?? Environment.CurrentDirectory;
+                }
                 else
-                    outputDirectory = settings.outputDirectory;
+                {
+                    outputDirectory = Path.IsPathRooted(settings.outputDirectory)
+                        ? settings.outputDirectory
+                        : Path.Combine(Path.GetDirectoryName(targetFullPath)!, settings.outputDirectory);
 
-                var outputFile = $"{outputDirectory}/{Path.GetFileNameWithoutExtension(sourceFile)}.lua";
+                    Directory.CreateDirectory(outputDirectory);
+                }
+
+                var outputFile = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(sourceFile) + ".lua");
                 using var fileStream = File.Open(outputFile, FileMode.Create);
                 fileStream.Write(Encoding.UTF8.GetBytes(output));
                 fileStream.Close();
