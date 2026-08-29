@@ -1,0 +1,19 @@
+name: Enforce Dev Source Branch
+
+on:
+    pull_request:
+        branches:
+            - main
+        types: [opened, synchronize, reopened]
+
+jobs:
+    check-source:
+        name: Check Source Branch
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ensure PR source is dev
+              run: |
+                  if [ "${{ github.head_ref }}" != "dev" ]; then
+                    echo "Error: Pull requests targetting 'main' must originate from 'dev'."
+                    exit 1
+                  fi
