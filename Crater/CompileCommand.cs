@@ -3,7 +3,6 @@ using System.Text;
 using Antlr4.Runtime;
 using Crater.Antlr;
 using Crater.Compilation;
-using Crater.Diagnostics;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 using Spectre.Console;
@@ -61,7 +60,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
                 var tokenStream = new CommonTokenStream(craterLexer);
                 var craterParser = new CraterParser(tokenStream);
 
-                var reporter = new DiagnosticBag();
+                var reporter = new ErrorReporter();
 
                 var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
                 var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
