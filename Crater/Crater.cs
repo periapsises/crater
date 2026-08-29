@@ -7,6 +7,7 @@ public static class Crater
     public static int Main(string[] args)
     {
         var app = new CommandApp();
+        app.SetDefaultCommand<CompileCommand>();
         app.Configure(config =>
         {
             config.SetApplicationName("crater");
