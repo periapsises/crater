@@ -109,12 +109,12 @@ public abstract class Type(string name, Type? baseType = null)
         return common is NullableType nullableCommon ? nullableCommon.InnerType : common;
     }
 
-    public virtual Type? ResolveIndex(Type index)
+    public virtual Type? ResolveIndex(Type index, bool assignment = false)
     {
         return null;
     }
 
-    public virtual Type? ResolveMemberAccess(string key)
+    public virtual Type? ResolveMemberAccess(string key, bool assignment = false)
     {
         return null;
     }

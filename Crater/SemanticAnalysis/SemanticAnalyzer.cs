@@ -274,7 +274,7 @@ public class SemanticAnalyzer
         var prefixType = AnalyzeStorageType(arrayStorage.prefix);
         var indexType = AnalyzeExpression(arrayStorage.index).FirstOrDefault() ?? TypeRegistry.NilType;
 
-        var resultType = prefixType.ResolveIndex(indexType);
+        var resultType = prefixType.ResolveIndex(indexType, true);
         if (resultType != null)
             return resultType;
 

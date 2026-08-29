@@ -33,10 +33,10 @@ public class ArrayType : Type
         return other is ArrayType otherArray && ElementType.IsSameType(otherArray.ElementType);
     }
 
-    public override Type? ResolveIndex(Type index)
+    public override Type? ResolveIndex(Type index, bool assignment = false)
     {
         if (index is NumberType)
-            return _returnType;
+            return assignment ? ElementType : _returnType;
 
         return null;
     }
