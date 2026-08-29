@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 using Antlr4.Runtime;
 using Crater.Antlr;
@@ -53,6 +54,9 @@ public class CompileCommand : Command<CompileCommand.Settings>
         {
             foreach (var sourceFile in _sourceFiles)
             {
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
 
                 var inputStream = new AntlrFileStream(sourceFile);
@@ -70,9 +74,8 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 if (reporter.hasErrors)
                 {
-                    AnsiConsole.WriteLine();
-                    AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [red]FAILED[/]");
-                    AnsiConsole.WriteLine();
+                    stopwatch.Stop();
+                    AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [red]FAILED[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
 
                     exitCode = 1;
                     continue;
@@ -101,12 +104,24 @@ public class CompileCommand : Command<CompileCommand.Settings>
                 fileStream.Write(Encoding.UTF8.GetBytes(output));
                 fileStream.Close();
 
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [green]SUCCESS[/]");
-                AnsiConsole.WriteLine();
+                stopwatch.Stop();
+                AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
             }
         });
 
         return exitCode;
+    }
+
+    private static string FormatElapsedTime(Stopwatch stopwatch)
+    {
+        var totalMicroseconds = (double)stopwatch.ElapsedTicks / Stopwatch.Frequency * 1000000;
+
+        if (totalMicroseconds < 1000)
+            return $"{totalMicroseconds:F0} µs";
+
+        if (stopwatch.ElapsedMilliseconds < 1000)
+            return $"{stopwatch.ElapsedMilliseconds} ms";
+
+        return stopwatch.Elapsed.ToString(@"mm\:ss");
     }
 }
