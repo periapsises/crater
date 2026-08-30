@@ -89,6 +89,7 @@ expression
     | left=expression logicalOperator right=expression          # LogicalOperation
     | left=expression AND right=expression                      # AndOperation
     | left=expression OR right=expression                       # OrOperation
+    | functionValue                                             # FunctionLiteral
     | LBRACKET tableValues? RBRACKET                            # TableLiteral
     | LBRACKET expressionList? RBRACKET                         # ArrayLiteral
     | NUMBER                                                    # NumberLiteral
@@ -114,6 +115,8 @@ postfixFunctionCall: LPAREN expressionList? RPAREN;
 postfixBracketIndexing: LSQRBRACKET expression RSQRBRACKET;
 
 postfixDotIndexing: DOT IDENTIFIER;
+
+functionValue: FUNCTION LPAREN parameters? RPAREN COLON returnTypes block END;
 
 tableValues: tableValue (COMMA tableValue)* COMMA?;
 

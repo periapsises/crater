@@ -358,6 +358,9 @@ public class Compiler
             case BooleanLiteral booleanLiteral:
                 CompileBooleanLiteral(booleanLiteral);
                 break;
+            case FunctionLiteral functionLiteral:
+                CompileFunctionLiteral(functionLiteral);
+                break;
             case TableLiteral tableLiteral:
                 CompileTableLiteral(tableLiteral);
                 break;
@@ -413,6 +416,27 @@ public class Compiler
     private void CompileBooleanLiteral(BooleanLiteral booleanLiteral)
     {
         _writer.Write(booleanLiteral.value);
+    }
+
+    private void CompileFunctionLiteral(FunctionLiteral functionLiteral)
+    {
+        _writer.Write("function(");
+
+        var parameterCount = functionLiteral.parameters.Count;
+        for (var i = 0; i < parameterCount; i++)
+        {
+            _writer.Write(functionLiteral.parameters[i].name);
+            if (i < parameterCount - 1)
+                _writer.Write(", ");
+        }
+
+        _writer.WriteLine(")");
+
+        _writer.Indent();
+        CompileBlock(functionLiteral.block);
+        _writer.Outdent();
+
+        _writer.Write("end");
     }
 
     private void CompileTableLiteral(TableLiteral tableLiteral)

@@ -80,6 +80,8 @@ public sealed record StringLiteral(string value, Source source) : Expression(sou
 
 public sealed record BooleanLiteral(string value, Source source) : Expression(source);
 
+public sealed record FunctionLiteral(List<Parameter> parameters, VarargParameter? varargParameter, List<TypeName> returnTypes, Block block, Source source) : Expression(source);
+
 public sealed record TableLiteral(List<TableValue> values, Source source) : Expression(source);
 
 public sealed record ArrayLiteral(List<Expression> values, Source source) : Expression(source);

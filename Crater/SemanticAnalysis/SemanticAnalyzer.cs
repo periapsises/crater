@@ -500,6 +500,7 @@ public class SemanticAnalyzer
             NumberLiteral numberLiteral => AnalyzeNumberLiteral(numberLiteral),
             StringLiteral stringLiteral => AnalyzeStringLiteral(stringLiteral),
             BooleanLiteral booleanLiteral => AnalyzeBooleanLiteral(booleanLiteral),
+            FunctionLiteral functionLiteral => AnalyzeFunctionLiteral(functionLiteral),
             TableLiteral tableLiteral => AnalyzeTableLiteral(tableLiteral),
             ArrayLiteral arrayLiteral => AnalyzeArrayLiteral(arrayLiteral),
             NilLiteral nilLiteral => AnalyzeNilLiteral(nilLiteral),
@@ -576,6 +577,44 @@ public class SemanticAnalyzer
     private List<Type> AnalyzeBooleanLiteral(BooleanLiteral booleanLiteral)
     {
         return [TypeRegistry.BooleanType];
+    }
+
+    private List<Type> AnalyzeFunctionLiteral(FunctionLiteral functionLiteral)
+    {
+        var parameterTypes = new List<Type>();
+        foreach (var parameter in functionLiteral.parameters)
+            parameterTypes.Add(AnalyzeTypeName(parameter.type));
+
+        Type? varargType = null;
+        if (functionLiteral.varargParameter is not null)
+            varargType = AnalyzeTypeName(functionLiteral.varargParameter.type);
+
+        var returnTypes = new List<Type>();
+        foreach (var returnType in functionLiteral.returnTypes)
+            returnTypes.Add(AnalyzeTypeName(returnType));
+
+        EnterScope();
+        var previousDepth = _loopDepth;
+        _loopDepth = 0;
+
+        for (var i = 0; i < parameterTypes.Count; i++)
+        {
+            var name = functionLiteral.parameters[i].name;
+
+            if (_local.GetType(name) != null)
+                _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Parameter '{name}' shadows an existing binding", DiagnosticSeverity.Warning, functionLiteral.source));
+
+            _local.Define(name, parameterTypes[i]);
+        }
+
+        var blocked = AnalyzeBlock(functionLiteral.block, returnTypes);
+        if (!blocked && returnTypes.Count != 0)
+            _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function", DiagnosticSeverity.Error, functionLiteral.source));
+
+        _loopDepth = previousDepth;
+        ExitScope();
+
+        return [new FunctionType(parameterTypes, varargType, returnTypes, TypeRegistry.FunctionType)];
     }
 
     private List<Type> AnalyzeTableLiteral(TableLiteral tableLiteral)

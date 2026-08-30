@@ -391,6 +391,34 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new BooleanLiteral(context.GetText(), Source.FromContext(context));
     }
 
+    public override object VisitFunctionValue(CraterParser.FunctionValueContext context)
+    {
+        List<Parameter> parameters;
+        if (context.parameters() != null)
+            parameters = Get<List<Parameter>>(context.parameters());
+        else
+            parameters = [];
+
+        VarargParameter? varargParameter = null;
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            if (parameters[i] is not VarargParameter varargParam)
+                continue;
+
+            if (i != parameters.Count - 1)
+                _reporter.Report(new Diagnostic(SyntaxErrors.InvalidVarargPlacement, $"Vararg parameter must be the last parameter in a function declaration", DiagnosticSeverity.Error, varargParam.source));
+
+            varargParameter = varargParam;
+        }
+
+        parameters.RemoveAll(parameter => parameter is VarargParameter);
+
+        var returnTypes = Get<List<TypeName>>(context.returnTypes());
+        var block = Get<Block>(context.block());
+
+        return new FunctionLiteral(parameters, varargParameter, returnTypes, block, Source.FromContext(context));
+    }
+
     public override object VisitTableLiteral(CraterParser.TableLiteralContext context)
     {
         if (context.tableValues() == null)
