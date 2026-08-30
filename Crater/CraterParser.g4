@@ -69,9 +69,12 @@ breakStatement: BREAK;
 typeName: typeName (QMARK | LSQRBRACKET RSQRBRACKET) | primaryType;
 
 primaryType
-    : IDENTIFIER        # NamedType
-    | tableDefinition   # TableType
+    : IDENTIFIER            # NamedType
+    | functionDefinition    # FunctionType
+    | tableDefinition       # TableType
     ;
+
+functionDefinition: FUN LPAREN (typeName (COMMA typeName)* VARARGS?)? RPAREN COLON returnTypes;
 
 tableDefinition: LBRACKET (variableDeclarator (COMMA variableDeclarator)*)? RBRACKET;
 

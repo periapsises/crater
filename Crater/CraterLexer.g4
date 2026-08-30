@@ -33,6 +33,7 @@ TRUE    : 'true';
 FALSE   : 'false';
 NIL     : 'nil';
 VOID    : 'void';
+FUN     : 'fun';
 
 // ==================================================
 // Operators & Punctuation

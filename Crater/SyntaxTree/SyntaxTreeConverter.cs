@@ -283,6 +283,19 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
         return new NamedTypeName(context.IDENTIFIER().GetText(), Source.FromContext(context));
     }
 
+    public override object VisitFunctionDefinition(CraterParser.FunctionDefinitionContext context)
+    {
+        var parameters = new List<TypeName>();
+        foreach (var typeNameContext in context.typeName())
+            parameters.Add(Get<TypeName>(typeNameContext));
+
+        var vararg = context.VARARGS() != null;
+
+        var returns = Get<List<TypeName>>(context.returnTypes());
+
+        return new FunctionTypeName(parameters, vararg, returns, Source.FromContext(context));
+    }
+
     public override object VisitTableDefinition(CraterParser.TableDefinitionContext context)
     {
         var fields = new List<VariableDeclarator>();

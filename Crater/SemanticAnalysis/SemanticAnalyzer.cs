@@ -426,6 +426,7 @@ public class SemanticAnalyzer
             NullableTypeName nullableTypeName => AnalyzeNullableTypeName(nullableTypeName),
             ArrayTypeName arrayTypeName => AnalyzeArrayTypeName(arrayTypeName),
             NamedTypeName namedTypeName => AnalyzeNamedTypeName(namedTypeName),
+            FunctionTypeName functionTypeName => AnalyzeFunctionTypeName(functionTypeName),
             TableTypeName tableTypeName => AnalyzeTableTypeName(tableTypeName),
             _ => throw new SwitchExpressionException(typeName)
         };
@@ -451,6 +452,26 @@ public class SemanticAnalyzer
 
         _reporter.Report(new Diagnostic(TypeErrors.UndefinedType, $"Could not find type '{namedTypeName.name}'", DiagnosticSeverity.Error, namedTypeName.source));
         return TypeRegistry.UnknownType;
+    }
+
+    private Type AnalyzeFunctionTypeName(FunctionTypeName functionTypeName)
+    {
+        var parameterTypes = new List<Type>();
+        foreach (var parameterTypeName in functionTypeName.parameters)
+            parameterTypes.Add(AnalyzeTypeName(parameterTypeName));
+
+        Type? vararg = null;
+        if (functionTypeName.vararg)
+        {
+            vararg = parameterTypes.LastOrDefault() ?? throw new Exception("Vararg specified without a type");
+            parameterTypes.RemoveAt(parameterTypes.Count - 1);
+        }
+
+        var returnTypes = new List<Type>();
+        foreach (var returnTypeName in functionTypeName.returns)
+            returnTypes.Add(AnalyzeTypeName(returnTypeName));
+
+        return new FunctionType(parameterTypes, vararg, returnTypes, TypeRegistry.FunctionType);
     }
 
     private Type AnalyzeTableTypeName(TableTypeName tableTypeName)

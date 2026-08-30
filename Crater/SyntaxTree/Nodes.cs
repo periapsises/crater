@@ -50,6 +50,8 @@ public abstract record TypeName(Source source) : Node(source);
 
 public sealed record NamedTypeName(string name, Source source) : TypeName(source);
 
+public sealed record FunctionTypeName(List<TypeName> parameters, bool vararg, List<TypeName> returns, Source source) : TypeName(source);
+
 public sealed record NullableTypeName(TypeName baseTypeName, Source source) : TypeName(source);
 
 public sealed record ArrayTypeName(TypeName baseTypeName, Source source) : TypeName(source);
