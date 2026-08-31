@@ -102,4 +102,6 @@ fragment EscapeSequence
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);
 
+COMMENT: '--' ~[\r\n]* -> channel(HIDDEN);
+
 SHEBANG: '#!' ~[\r\n]*;
