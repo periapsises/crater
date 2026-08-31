@@ -2,7 +2,7 @@
 
 options { tokenVocab = CraterLexer; }
 
-program: block EOF;
+program: SHEBANG? block EOF;
 
 block: statement*;
 

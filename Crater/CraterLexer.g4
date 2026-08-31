@@ -101,3 +101,5 @@ fragment EscapeSequence
 // ==================================================
 
 WHITESPACE: (' ' | '\t' | '\n' | '\r')+ -> channel(HIDDEN);
+
+SHEBANG: '#!' ~[\r\n]*;
