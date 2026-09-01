@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Crater.Compilation;
 using Crater.Diagnostics;
 using Crater.Diagnostics.Codes;
 using Crater.SemanticAnalysis.Types;
@@ -9,6 +10,7 @@ namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer
 {
+    private readonly ModuleResolver _resolver;
     private readonly IDiagnosticReporter _reporter;
 
     private readonly Environment _global;
@@ -18,8 +20,9 @@ public class SemanticAnalyzer
 
     private int _loopDepth;
 
-    public SemanticAnalyzer(IDiagnosticReporter reporter)
+    public SemanticAnalyzer(ModuleResolver resolver, IDiagnosticReporter reporter)
     {
+        _resolver = resolver;
         _reporter = reporter;
 
         _types = new Dictionary<string, Type>()

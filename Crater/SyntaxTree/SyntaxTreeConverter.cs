@@ -9,7 +9,7 @@ public class SyntaxTreeConverter(IDiagnosticReporter reporter) : CraterParserBas
 {
     private readonly IDiagnosticReporter _reporter = reporter;
 
-    private T Get<T>(ParserRuleContext context)
+    public T Get<T>(ParserRuleContext context)
     {
         var node = Visit(context);
         if (node is T t)

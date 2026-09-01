@@ -1,11 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-using Antlr4.Runtime;
-using Crater.Antlr;
 using Crater.Compilation;
-using Crater.SemanticAnalysis;
-using Crater.SyntaxTree;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using Environment = System.Environment;
@@ -59,18 +55,11 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
 
-                var inputStream = new AntlrFileStream(sourceFile);
-                var craterLexer = new CraterLexer(inputStream);
-                var tokenStream = new CommonTokenStream(craterLexer);
-                var craterParser = new CraterParser(tokenStream);
-
+                var resolver = new ModuleResolver(Directory.GetCurrentDirectory().Replace('\\', '/'));
                 var reporter = new ErrorReporter();
 
-                var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
-                var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
-
-                var semanticAnalyzer = new SemanticAnalyzer(reporter);
-                semanticAnalyzer.AnalyzeProgram(program);
+                var compilationPipeline = new CompilationPipeline(resolver, reporter);
+                var compilationUnit = compilationPipeline.CompileEntry(sourceFile);
 
                 if (reporter.hasErrors)
                 {
@@ -81,7 +70,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
                     continue;
                 }
 
-                var output = Compiler.Compile(program);
+                var output = Compiler.Compile(compilationUnit.SyntaxTree);
 
                 var fullSourcePath = Path.GetFullPath(sourceFile);
 

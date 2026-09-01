@@ -4,7 +4,7 @@ namespace Crater.Compilation;
 
 public class ModuleResolver(string projectRoot)
 {
-    private readonly string _projectRoot = projectRoot;
+    public readonly string ProjectRoot = projectRoot;
     private readonly string _searchPatterns = "?.cra;?/init.cra";
 
     public bool TryResolve(string moduleName, [NotNullWhen(true)] out string? path)
@@ -13,7 +13,7 @@ public class ModuleResolver(string projectRoot)
 
         foreach (var searchPath in searchPaths)
         {
-            var attemptPath = $"{_projectRoot}/{searchPath}";
+            var attemptPath = $"{ProjectRoot}/{searchPath}";
             if (!File.Exists(attemptPath))
                 continue;
 
