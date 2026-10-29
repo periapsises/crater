@@ -1,14 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
-using Antlr4.Runtime;
-using Crater.Antlr;
 using Crater.Compilation;
-using Crater.SemanticAnalysis;
-using Crater.SyntaxTree;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Environment = System.Environment;
 
 namespace Crater;
 
@@ -71,16 +65,16 @@ public class CompileCommand : Command<CompileCommand.Settings>
             pipeline.ModuleFinished += (_, status) =>
             {
                 var path = status.Item1;
-                var success = status.Item2;
+                var reporter = status.Item2;
                 var relative = Path.GetRelativePath(projectRoot, path);
 
                 if (!tasks.TryGetValue(path, out var task))
                     return;
 
-                if (success)
-                    task.Description = $"Compiling [gray]{relative}[/] [green]SUCCESS[/]";
-                else
+                if (reporter.hasErrors)
                     task.Description = $"Compiling [gray]{relative}[/] [red]FAILED[/]";
+                else
+                    task.Description = $"Compiling [gray]{relative}[/] [green]SUCCESS[/]";
 
                 task.Value = task.MaxValue;
                 task.StopTask();

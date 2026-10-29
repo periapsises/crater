@@ -1,6 +1,7 @@
 using System.Text;
 using Antlr4.Runtime;
 using Crater.Antlr;
+using Crater.Diagnostics;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 using Environment = Crater.SemanticAnalysis.Environment;
@@ -13,13 +14,13 @@ public class BuildPipeline(string projectRoot, string? directory)
     public readonly Environment GlobalEnvironment = new();
 
     public EventHandler<string>? ModuleStart;
-    public EventHandler<(string, bool)>? ModuleFinished;
+    public EventHandler<(string, IDiagnosticReporter)>? ModuleFinished;
 
     public void BuildFile(string sourcePath)
     {
         ModuleStart?.Invoke(this, sourcePath);
 
-        var inputStream = new AntlrFileStream(sourcePath);
+        var inputStream = new NamedFileStream(sourcePath, Path.GetRelativePath(projectRoot, sourcePath));
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
@@ -34,7 +35,7 @@ public class BuildPipeline(string projectRoot, string? directory)
 
         if (reporter.hasErrors)
         {
-            ModuleFinished?.Invoke(this, (sourcePath, false));
+            ModuleFinished?.Invoke(this, (sourcePath, reporter));
             return;
         }
 
@@ -57,6 +58,6 @@ public class BuildPipeline(string projectRoot, string? directory)
         fileStream.Write(Encoding.UTF8.GetBytes(output));
         fileStream.Close();
 
-        ModuleFinished?.Invoke(this, (sourcePath, true));
+        ModuleFinished?.Invoke(this, (sourcePath, reporter));
     }
 }
