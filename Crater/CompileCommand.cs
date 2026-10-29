@@ -34,7 +34,8 @@ public class CompileCommand : Command<CompileCommand.Settings>
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        var projectRoot = Path.GetDirectoryName(Path.GetFullPath(settings.source))!;
+        var projectSource = Path.GetFullPath(settings.source);
+        var projectRoot = Path.GetDirectoryName(projectSource)!;
         var pipeline = new BuildPipeline(projectRoot, settings.outputDirectory);
 
         var tasks = new Dictionary<string, ProgressTask>();
@@ -80,7 +81,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
                 task.StopTask();
             };
 
-            pipeline.BuildFile(settings.source);
+            pipeline.BuildFile(projectSource);
         });
 
         stopwatch.Stop();

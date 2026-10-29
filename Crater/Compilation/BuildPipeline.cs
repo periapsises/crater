@@ -12,12 +12,16 @@ namespace Crater.Compilation;
 public class BuildPipeline(string projectRoot, string? directory)
 {
     public readonly Environment GlobalEnvironment = new();
+    public readonly HashSet<string> ModulesInProgress = [];
 
     public EventHandler<string>? ModuleStart;
     public EventHandler<(string, IDiagnosticReporter)>? ModuleFinished;
 
     public void BuildFile(string sourcePath)
     {
+        if (!ModulesInProgress.Add(sourcePath))
+            throw new ArgumentException("This module is already in progress (cyclic dependency)", nameof(sourcePath));
+
         ModuleStart?.Invoke(this, sourcePath);
 
         var inputStream = new NamedFileStream(sourcePath, Path.GetRelativePath(projectRoot, sourcePath));
@@ -59,5 +63,6 @@ public class BuildPipeline(string projectRoot, string? directory)
         fileStream.Close();
 
         ModuleFinished?.Invoke(this, (sourcePath, reporter));
+        ModulesInProgress.Remove(sourcePath);
     }
 }

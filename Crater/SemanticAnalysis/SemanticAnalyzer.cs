@@ -813,7 +813,13 @@ public class SemanticAnalyzer
 
         if (!PathResolver.TryGetPath(moduleName, out var modulePath))
         {
-            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module {moduleName}", DiagnosticSeverity.Error, functionCall.source));
+            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
+            return [TypeRegistry.UnknownType];
+        }
+
+        if (_pipeline.ModulesInProgress.Contains(modulePath))
+        {
+            _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
             return [TypeRegistry.UnknownType];
         }
 
