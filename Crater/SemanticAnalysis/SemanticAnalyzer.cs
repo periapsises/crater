@@ -846,7 +846,7 @@ public class SemanticAnalyzer
                 return path;
             }));
 
-            stackFormatted += $" -> [red]{moduleName}[/]";
+            stackFormatted += $" -> {moduleName}";
 
             _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}':\n    {stackFormatted}", DiagnosticSeverity.Error, functionCall.source));
             return TypeRegistry.UnknownType;

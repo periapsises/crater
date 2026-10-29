@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Crater.Diagnostics;
+using Crater.Diagnostics.Codes;
 using Spectre.Console;
 
 namespace Crater;
@@ -32,6 +33,14 @@ public class ErrorReporter : IDiagnosticReporter
         };
 
         AnsiConsole.MarkupLineInterpolated($"[yellow underline]{diagnostic.source.File}:{diagnostic.source.StartLine}:{diagnostic.source.StartColumn}[/] - [{severityColor} bold]{severityCode}[/] [lightcyan1]{diagnostic.code}[/]:");
-        AnsiConsole.MarkupLine("  " + diagnostic.message);
+
+        var message = diagnostic.message;
+        if (diagnostic.code == SemanticWarnings.CyclicModuleDependency)
+        {
+            var insertPosition = message.LastIndexOf("->", StringComparison.Ordinal) + 2;
+            message = message[..insertPosition] + "[red]" + message[insertPosition..] + "[/]";
+        }
+
+        AnsiConsole.MarkupLine("  " + message);
     }
 }
