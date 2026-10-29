@@ -17,7 +17,7 @@ public class BuildPipeline(string projectRoot, string? directory)
     public readonly Environment GlobalEnvironment = new();
     public readonly PathResolver PathResolver = new(projectRoot);
     public readonly Stack<string> ModulesInProgress = [];
-    public readonly Dictionary<string, List<(Type, Source)>> CompletedModules = [];
+    public readonly Dictionary<string, Type> CompletedModules = [];
 
     public EventHandler<string>? ModuleStart;
     public EventHandler<(string, IDiagnosticReporter)>? ModuleFinished;
@@ -41,18 +41,18 @@ public class BuildPipeline(string projectRoot, string? directory)
         var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
 
         var semanticAnalyzer = new SemanticAnalyzer(this, reporter);
-        var returns = semanticAnalyzer.AnalyzeProgram(program);
+        var returnType = semanticAnalyzer.AnalyzeProgram(program);
 
         if (reporter.hasErrors)
         {
-            CompletedModules[sourcePath] = [];
+            CompletedModules[sourcePath] = TypeRegistry.UnknownType;
 
             ModulesInProgress.Pop();
             ModuleFinished?.Invoke(this, (sourcePath, reporter));
             return;
         }
 
-        CompletedModules[sourcePath] = returns;
+        CompletedModules[sourcePath] = returnType;
 
         var output = Compiler.Compile(program);
         var fullSourcePath = Path.GetFullPath(sourcePath);

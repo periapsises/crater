@@ -39,10 +39,15 @@ public class SemanticAnalyzer
 
     private void ExitScope() => _local = _local.Parent ?? throw new NullReferenceException("Cannot exit global scope");
 
-    public List<(Type, Source)> AnalyzeProgram(Program program)
+    public Type AnalyzeProgram(Program program)
     {
         AnalyzeBlock(program.block, out var returns);
-        return returns ?? [];
+
+        if (returns == null || returns.Count == 0)
+            return TypeRegistry.BooleanType;
+
+        // TODO: Warning for modules returning more than one value
+        return returns[0].Item1;
     }
 
     private bool AnalyzeBlock(Block block, out List<(Type, Source)>? actualReturns, List<Type>? expectedReturns = null)
@@ -717,7 +722,7 @@ public class SemanticAnalyzer
         }
 
         if (prefixType is RequireFunction)
-            return AnalyzeRequire(functionCall);
+            return [AnalyzeRequire(functionCall)];
 
         var argumentTypes = ExpandExpressionList(functionCall.arguments);
 
@@ -805,18 +810,18 @@ public class SemanticAnalyzer
         return results;
     }
 
-    private List<Type> AnalyzeRequire(FunctionCall functionCall)
+    private Type AnalyzeRequire(FunctionCall functionCall)
     {
         if (functionCall.arguments.Count == 0)
         {
             _reporter.Report(new Diagnostic(TypeErrors.MissingArgument, "Missing string argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
-            return [TypeRegistry.UnknownType];
+            return TypeRegistry.UnknownType;
         }
 
         if (functionCall.arguments.Count > 1 || functionCall.arguments.First() is not StringLiteral rawModuleName)
         {
             _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, "Expected a single string literal as argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
-            return [TypeRegistry.UnknownType];
+            return TypeRegistry.UnknownType;
         }
 
         var moduleName = rawModuleName.value.Trim('"');
@@ -827,7 +832,7 @@ public class SemanticAnalyzer
             var attemptsFormatted = string.Join('\n', attempts.Select(attempt => $"    {attempt}"));
 
             _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'. Searched for:\n{attemptsFormatted}", DiagnosticSeverity.Error, functionCall.source));
-            return [TypeRegistry.UnknownType];
+            return TypeRegistry.UnknownType;
         }
 
         if (_pipeline.ModulesInProgress.Contains(modulePath))
@@ -844,12 +849,12 @@ public class SemanticAnalyzer
             stackFormatted += $" -> [red]{moduleName}[/]";
 
             _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}':\n    {stackFormatted}", DiagnosticSeverity.Error, functionCall.source));
-            return [TypeRegistry.UnknownType];
+            return TypeRegistry.UnknownType;
         }
 
         if (!_pipeline.CompletedModules.ContainsKey(modulePath))
             _pipeline.BuildFile(modulePath);
 
-        return _pipeline.CompletedModules[modulePath].ConvertAll(e => e.Item1);
+        return _pipeline.CompletedModules[modulePath];
     }
 }
