@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Crater.Compilation;
 using Crater.Diagnostics;
 using Crater.Diagnostics.Codes;
 using Crater.SemanticAnalysis.Types;
@@ -707,6 +708,9 @@ public class SemanticAnalyzer
             return [TypeRegistry.UnknownType];
         }
 
+        if (prefixType is RequireFunction)
+            return AnalyzeRequire(functionCall);
+
         var argumentTypes = ExpandExpressionList(functionCall.arguments);
 
         for (var i = 0; i < functionType.ParameterTypes.Count; i++)
@@ -791,5 +795,32 @@ public class SemanticAnalyzer
         }
 
         return results;
+    }
+
+    private List<Type> AnalyzeRequire(FunctionCall functionCall)
+    {
+        if (functionCall.arguments.Count == 0)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.MissingArgument, "Missing string argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
+            return [TypeRegistry.UnknownType];
+        }
+
+        if (functionCall.arguments.Count > 1 || functionCall.arguments.First() is not StringLiteral rawModuleName)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, "Expected a single string literal as argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
+            return [TypeRegistry.UnknownType];
+        }
+
+        var moduleName = rawModuleName.value.Trim('"');
+
+        if (!PathResolver.TryGetPath(moduleName, out var modulePath))
+        {
+            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module {moduleName}", DiagnosticSeverity.Error, functionCall.source));
+            return [TypeRegistry.UnknownType];
+        }
+
+        // TODO: Parse and analyze the new module
+
+        return [];
     }
 }
