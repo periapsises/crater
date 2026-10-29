@@ -16,9 +16,9 @@ public class CompileCommand : Command<CompileCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
-        [Description("The source file or directory to compile.")]
-        [CommandArgument(0, "<TARGET>")]
-        public required string target { get; init; }
+        [Description("The source file to compile.")]
+        [CommandArgument(0, "<SOURCE>")]
+        public required string source { get; init; }
 
         [Description("The output directory for compiled Lua files.")]
         [CommandOption("-o|--outDir <DIRECTORY>")]
@@ -29,40 +29,26 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
     protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
-        if (File.Exists(settings.target))
-        {
-            _sourceFiles.Add(settings.target);
+        if (File.Exists(settings.source))
             return ValidationResult.Success();
-        }
 
-        if (Directory.Exists(settings.target))
-        {
-            _sourceFiles.AddRange(Directory.GetFiles(settings.target, "*.cra"));
-            return ValidationResult.Success();
-        }
-
-        return ValidationResult.Error($"The target path '{settings.target}' does not exist.");
+        return ValidationResult.Error($"The source file '{settings.source}' does not exist.");
     }
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var targetFullPath = Path.GetFullPath(settings.target);
-
         AnsiConsole.Status().SpinnerStyle(Style.Parse("blue")).Start("Compiling", ctx =>
         {
-            foreach (var sourceFile in _sourceFiles)
-            {
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-                ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
+            ctx.Status($"Compiling [cyan]{Path.GetFileName(settings.source)}[/]");
 
-                var pipeline = new BuildPipeline(settings.target, settings.outputDirectory);
-                pipeline.BuildFile(sourceFile);
+            var pipeline = new BuildPipeline(Path.GetDirectoryName(settings.source)!, settings.outputDirectory);
+            pipeline.BuildFile(settings.source);
 
-                stopwatch.Stop();
-                AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
-            }
+            stopwatch.Stop();
+            AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(settings.source)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
         });
 
         return 0;
