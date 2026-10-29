@@ -3,14 +3,14 @@ using Antlr4.Runtime;
 using Crater.Antlr;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
-using Environment = System.Environment;
+using Environment = Crater.SemanticAnalysis.Environment;
+using Env = System.Environment;
 
 namespace Crater.Compilation;
 
-public class BuildPipeline(string projectRoot, string? outputDirectory)
+public class BuildPipeline(string projectRoot, string? directory)
 {
-    private readonly string _projectRoot = projectRoot;
-    private readonly string? _outputDirectory = outputDirectory;
+    public readonly Environment GlobalEnvironment = new();
 
     public EventHandler<string>? ModuleStart;
     public EventHandler<(string, bool)>? ModuleFinished;
@@ -42,16 +42,13 @@ public class BuildPipeline(string projectRoot, string? outputDirectory)
         var fullSourcePath = Path.GetFullPath(sourcePath);
 
         string outputDirectory;
-        if (string.IsNullOrEmpty(_outputDirectory))
+        if (string.IsNullOrEmpty(directory))
         {
-            outputDirectory = Path.GetDirectoryName(fullSourcePath) ?? Environment.CurrentDirectory;
+            outputDirectory = Path.GetDirectoryName(fullSourcePath) ?? Env.CurrentDirectory;
         }
         else
         {
-            outputDirectory = Path.IsPathRooted(_outputDirectory)
-                ? _outputDirectory
-                : Path.Combine(Path.GetDirectoryName(_projectRoot)!, _outputDirectory);
-
+            outputDirectory = Path.IsPathRooted(directory) ? directory : Path.Combine(Path.GetDirectoryName(projectRoot)!, directory);
             Directory.CreateDirectory(outputDirectory);
         }
 

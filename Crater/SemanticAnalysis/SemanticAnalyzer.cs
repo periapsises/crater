@@ -13,7 +13,6 @@ public class SemanticAnalyzer
     private readonly BuildPipeline _pipeline;
     private readonly IDiagnosticReporter _reporter;
 
-    private readonly Environment _global;
     private Environment _local;
 
     private readonly Dictionary<string, Type> _types;
@@ -33,10 +32,7 @@ public class SemanticAnalyzer
             { "bool", TypeRegistry.BooleanType }
         };
 
-        _global = new Environment();
-        _local = new Environment(_global);
-
-        Library.Load(_global);
+        _local = new Environment(pipeline.GlobalEnvironment);
     }
 
     private void EnterScope() => _local = new Environment(_local);
@@ -103,7 +99,7 @@ public class SemanticAnalyzer
 
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
-        var env = variableDeclaration.local ? _local : _global;
+        var env = variableDeclaration.local ? _local : _pipeline.GlobalEnvironment;
 
         var initializerTypes = ExpandExpressionList(variableDeclaration.initializers);
 
@@ -149,7 +145,7 @@ public class SemanticAnalyzer
 
     private void AnalyzeFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        var env = functionDeclaration.local ? _local : _global;
+        var env = functionDeclaration.local ? _local : _pipeline.GlobalEnvironment;
 
         if (_local.GetType(functionDeclaration.name) != null)
             _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Function '{functionDeclaration.name}' shadows an existing binding", DiagnosticSeverity.Warning, functionDeclaration.source));

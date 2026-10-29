@@ -1,8 +1,16 @@
 namespace Crater.SemanticAnalysis;
 
-public class Environment(Environment? parent = null)
+public class Environment
 {
-    public readonly Environment? Parent = parent;
+    public readonly Environment? Parent;
+
+    public Environment(Environment? parent = null)
+    {
+        Parent = parent;
+
+        if (parent == null)
+            Library.Load(this);
+    }
 
     private readonly Dictionary<string, Type> _symbolTypes = [];
 
