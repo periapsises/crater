@@ -19,8 +19,6 @@ public class CompileCommand : Command<CompileCommand.Settings>
         public string? outputDirectory { get; init; }
     }
 
-    private readonly List<string> _sourceFiles = [];
-
     protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
         if (File.Exists(settings.source))
