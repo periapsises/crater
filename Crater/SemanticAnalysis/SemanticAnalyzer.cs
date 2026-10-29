@@ -823,7 +823,6 @@ public class SemanticAnalyzer
 
         _pipeline.BuildFile(modulePath);
 
-
         return [];
     }
 }

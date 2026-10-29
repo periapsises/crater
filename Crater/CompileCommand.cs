@@ -48,8 +48,6 @@ public class CompileCommand : Command<CompileCommand.Settings>
     {
         var targetFullPath = Path.GetFullPath(settings.target);
 
-        var exitCode = 0;
-
         AnsiConsole.Status().SpinnerStyle(Style.Parse("blue")).Start("Compiling", ctx =>
         {
             foreach (var sourceFile in _sourceFiles)
@@ -59,59 +57,15 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
 
-                var pipeline = new BuildPipeline();
-
-                var inputStream = new AntlrFileStream(sourceFile);
-                var craterLexer = new CraterLexer(inputStream);
-                var tokenStream = new CommonTokenStream(craterLexer);
-                var craterParser = new CraterParser(tokenStream);
-
-                var reporter = new ErrorReporter();
-
-                var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
-                var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
-
-                var semanticAnalyzer = new SemanticAnalyzer(pipeline, reporter);
-                semanticAnalyzer.AnalyzeProgram(program);
-
-                if (reporter.hasErrors)
-                {
-                    stopwatch.Stop();
-                    AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [red]FAILED[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
-
-                    exitCode = 1;
-                    continue;
-                }
-
-                var output = Compiler.Compile(program);
-
-                var fullSourcePath = Path.GetFullPath(sourceFile);
-
-                string outputDirectory;
-                if (string.IsNullOrEmpty(settings.outputDirectory))
-                {
-                    outputDirectory = Path.GetDirectoryName(fullSourcePath) ?? Environment.CurrentDirectory;
-                }
-                else
-                {
-                    outputDirectory = Path.IsPathRooted(settings.outputDirectory)
-                        ? settings.outputDirectory
-                        : Path.Combine(Path.GetDirectoryName(targetFullPath)!, settings.outputDirectory);
-
-                    Directory.CreateDirectory(outputDirectory);
-                }
-
-                var outputFile = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(sourceFile) + ".lua");
-                using var fileStream = File.Open(outputFile, FileMode.Create);
-                fileStream.Write(Encoding.UTF8.GetBytes(output));
-                fileStream.Close();
+                var pipeline = new BuildPipeline(settings.target, settings.outputDirectory);
+                pipeline.BuildFile(sourceFile);
 
                 stopwatch.Stop();
                 AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
             }
         });
 
-        return exitCode;
+        return 0;
     }
 
     private static string FormatElapsedTime(Stopwatch stopwatch)
