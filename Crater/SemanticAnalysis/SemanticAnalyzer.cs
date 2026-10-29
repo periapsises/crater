@@ -39,14 +39,16 @@ public class SemanticAnalyzer
 
     private void ExitScope() => _local = _local.Parent ?? throw new NullReferenceException("Cannot exit global scope");
 
-    public void AnalyzeProgram(Program program)
+    public List<(Type, Source)> AnalyzeProgram(Program program)
     {
-        AnalyzeBlock(program.block);
+        AnalyzeBlock(program.block, out var returns);
+        return returns ?? [];
     }
 
-    private bool AnalyzeBlock(Block block, List<Type>? expectedReturns = null)
+    private bool AnalyzeBlock(Block block, out List<(Type, Source)>? actualReturns, List<Type>? expectedReturns = null)
     {
         var blocking = false;
+        actualReturns = null;
 
         foreach (var statement in block.statements)
         {
@@ -83,7 +85,7 @@ public class SemanticAnalyzer
                     AnalyzeGenericForLoop(genericForLoop);
                     break;
                 case ReturnStatement returnStatement:
-                    AnalyzeReturnStatement(returnStatement, expectedReturns);
+                    actualReturns = AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
                     break;
                 case BreakStatement breakStatement:
@@ -178,7 +180,7 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        var blocked = AnalyzeBlock(functionDeclaration.block, returnTypes);
+        var blocked = AnalyzeBlock(functionDeclaration.block, out _, returnTypes);
         if (!blocked && returnTypes.Count != 0)
             _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
 
@@ -189,7 +191,7 @@ public class SemanticAnalyzer
     private void AnalyzeDoStatement(DoStatement doStatement)
     {
         EnterScope();
-        AnalyzeBlock(doStatement.block);
+        AnalyzeBlock(doStatement.block, out _);
         ExitScope();
     }
 
@@ -198,7 +200,7 @@ public class SemanticAnalyzer
         AnalyzeExpression(ifStatement.condition);
 
         EnterScope();
-        var mainIsBlocking = AnalyzeBlock(ifStatement.block, expectedReturns);
+        var mainIsBlocking = AnalyzeBlock(ifStatement.block, out _, expectedReturns);
         ExitScope();
 
         var allElseIfsBlocking = true;
@@ -217,7 +219,7 @@ public class SemanticAnalyzer
         AnalyzeExpression(elseIfStatement.condition);
 
         EnterScope();
-        var blocking = AnalyzeBlock(elseIfStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseIfStatement.block, out _, expectedReturns);
         ExitScope();
 
         return blocking;
@@ -226,7 +228,7 @@ public class SemanticAnalyzer
     private bool AnalyzeElseStatement(ElseStatement elseStatement, List<Type>? expectedReturns = null)
     {
         EnterScope();
-        var blocking = AnalyzeBlock(elseStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseStatement.block, out _, expectedReturns);
         ExitScope();
 
         return blocking;
@@ -249,7 +251,7 @@ public class SemanticAnalyzer
             else if (!variableType.CanHold(valueType.Item1))
             {
                 if (variableType is TableType && valueType.Item1 is TableType)
-                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type'", DiagnosticSeverity.Error, valueType.Item2));
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, "The contents of the assigned table do not match the declared type'", DiagnosticSeverity.Error, valueType.Item2));
                 else
                     _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
@@ -307,7 +309,7 @@ public class SemanticAnalyzer
 
         EnterScope();
         _loopDepth++;
-        AnalyzeBlock(whileLoop.block);
+        AnalyzeBlock(whileLoop.block, out _);
         _loopDepth--;
         ExitScope();
     }
@@ -316,7 +318,7 @@ public class SemanticAnalyzer
     {
         EnterScope();
         _loopDepth++;
-        AnalyzeBlock(repeatLoop.block);
+        AnalyzeBlock(repeatLoop.block, out _);
         AnalyzeExpression(repeatLoop.condition);
         _loopDepth--;
         ExitScope();
@@ -342,7 +344,7 @@ public class SemanticAnalyzer
         EnterScope();
         _loopDepth++;
         _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
-        AnalyzeBlock(numericForLoop.block);
+        AnalyzeBlock(numericForLoop.block, out _);
         _loopDepth--;
         ExitScope();
     }
@@ -382,18 +384,19 @@ public class SemanticAnalyzer
             }
         }
 
-        AnalyzeBlock(genericForLoop.block);
+        AnalyzeBlock(genericForLoop.block, out _);
 
         _loopDepth--;
         ExitScope();
     }
 
-    private void AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)
+    private List<(Type, Source)> AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)
     {
         var returnTypes = ExpandExpressionList(returnStatement.returnValues);
         if (expectedReturnTypes == null)
-            return;
+            return returnTypes;
 
+        var allTypesValid = true;
         for (var i = 0; i < expectedReturnTypes.Count; i++)
         {
             var expectedType = expectedReturnTypes[i];
@@ -404,12 +407,19 @@ public class SemanticAnalyzer
                     continue;
 
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected to return '{expectedType}' but got '{returnTypes[i].Item1}", DiagnosticSeverity.Error, returnTypes[i].Item2));
+                allTypesValid = false;
             }
             else if (expectedType is not NullableType)
             {
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected a '{expectedType}' value to be returned", DiagnosticSeverity.Error, returnStatement.source));
+                allTypesValid = false;
             }
         }
+
+        if (allTypesValid)
+            return returnTypes;
+
+        return [(TypeRegistry.UnknownType, returnStatement.source)];
     }
 
     private void AnalyzeBreakStatement(BreakStatement breakStatement)
@@ -606,7 +616,7 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        var blocked = AnalyzeBlock(functionLiteral.block, returnTypes);
+        var blocked = AnalyzeBlock(functionLiteral.block, out _, returnTypes);
         if (!blocked && returnTypes.Count != 0)
             _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function", DiagnosticSeverity.Error, functionLiteral.source));
 
@@ -823,8 +833,9 @@ public class SemanticAnalyzer
             return [TypeRegistry.UnknownType];
         }
 
-        _pipeline.BuildFile(modulePath);
+        if (!_pipeline.CompletedModules.ContainsKey(modulePath))
+            _pipeline.BuildFile(modulePath);
 
-        return [];
+        return _pipeline.CompletedModules[modulePath].ConvertAll(e => e.Item1);
     }
 }

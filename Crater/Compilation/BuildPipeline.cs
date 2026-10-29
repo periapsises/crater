@@ -6,6 +6,7 @@ using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 using Environment = Crater.SemanticAnalysis.Environment;
 using Env = System.Environment;
+using Type = Crater.SemanticAnalysis.Type;
 
 namespace Crater.Compilation;
 
@@ -13,6 +14,7 @@ public class BuildPipeline(string projectRoot, string? directory)
 {
     public readonly Environment GlobalEnvironment = new();
     public readonly HashSet<string> ModulesInProgress = [];
+    public readonly Dictionary<string, List<(Type, Source)>> CompletedModules = [];
 
     public EventHandler<string>? ModuleStart;
     public EventHandler<(string, IDiagnosticReporter)>? ModuleFinished;
@@ -35,13 +37,18 @@ public class BuildPipeline(string projectRoot, string? directory)
         var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
 
         var semanticAnalyzer = new SemanticAnalyzer(this, reporter);
-        semanticAnalyzer.AnalyzeProgram(program);
+        var returns = semanticAnalyzer.AnalyzeProgram(program);
 
         if (reporter.hasErrors)
         {
+            CompletedModules[sourcePath] = [];
+
+            ModulesInProgress.Remove(sourcePath);
             ModuleFinished?.Invoke(this, (sourcePath, reporter));
             return;
         }
+
+        CompletedModules[sourcePath] = returns;
 
         var output = Compiler.Compile(program);
         var fullSourcePath = Path.GetFullPath(sourcePath);
