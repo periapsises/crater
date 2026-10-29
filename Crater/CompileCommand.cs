@@ -37,19 +37,60 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        AnsiConsole.Status().SpinnerStyle(Style.Parse("blue")).Start("Compiling", ctx =>
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        var projectRoot = Path.GetDirectoryName(Path.GetFullPath(settings.source))!;
+        var pipeline = new BuildPipeline(projectRoot, settings.outputDirectory);
+
+        var tasks = new Dictionary<string, ProgressTask>();
+
+        var spinnerColumn = new SpinnerColumn();
+        var descriptionColumn = new TaskDescriptionColumn
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Alignment = Justify.Left
+        };
 
-            ctx.Status($"Compiling [cyan]{Path.GetFileName(settings.source)}[/]");
+        AnsiConsole.Progress().Columns(spinnerColumn, descriptionColumn).Start(ctx =>
+        {
+            pipeline.ModuleStart += (_, path) =>
+            {
+                var relative = Path.GetRelativePath(projectRoot, path);
 
-            var pipeline = new BuildPipeline(Path.GetDirectoryName(settings.source)!, settings.outputDirectory);
+                foreach (var kvp in tasks)
+                {
+                    if (kvp.Value.IsFinished && kvp.Key != path)
+                        kvp.Value.Description = $"Compiling [gray]{Path.GetRelativePath(projectRoot, kvp.Key)} (waiting)[/]";
+                }
+
+                var task = ctx.AddTask($"Compiling [yellow]{relative}[/]", autoStart: true);
+                task.IsIndeterminate = true;
+                tasks[path] = task;
+            };
+
+            pipeline.ModuleFinished += (_, status) =>
+            {
+                var path = status.Item1;
+                var success = status.Item2;
+                var relative = Path.GetRelativePath(projectRoot, path);
+
+                if (!tasks.TryGetValue(path, out var task))
+                    return;
+
+                if (success)
+                    task.Description = $"Compiling [gray]{relative}[/] [green]SUCCESS[/]";
+                else
+                    task.Description = $"Compiling [gray]{relative}[/] [red]FAILED[/]";
+
+                task.Value = task.MaxValue;
+                task.StopTask();
+            };
+
             pipeline.BuildFile(settings.source);
-
-            stopwatch.Stop();
-            AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(settings.source)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
         });
+
+        stopwatch.Stop();
+        AnsiConsole.MarkupLineInterpolated($"Compilation finished ({FormatElapsedTime(stopwatch)})");
 
         return 0;
     }

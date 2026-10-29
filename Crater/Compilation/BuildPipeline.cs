@@ -12,8 +12,13 @@ public class BuildPipeline(string projectRoot, string? outputDirectory)
     private readonly string _projectRoot = projectRoot;
     private readonly string? _outputDirectory = outputDirectory;
 
+    public EventHandler<string>? ModuleStart;
+    public EventHandler<(string, bool)>? ModuleFinished;
+
     public void BuildFile(string sourcePath)
     {
+        ModuleStart?.Invoke(this, sourcePath);
+
         var inputStream = new AntlrFileStream(sourcePath);
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
@@ -28,7 +33,10 @@ public class BuildPipeline(string projectRoot, string? outputDirectory)
         semanticAnalyzer.AnalyzeProgram(program);
 
         if (reporter.hasErrors)
+        {
+            ModuleFinished?.Invoke(this, (sourcePath, false));
             return;
+        }
 
         var output = Compiler.Compile(program);
         var fullSourcePath = Path.GetFullPath(sourcePath);
@@ -51,5 +59,7 @@ public class BuildPipeline(string projectRoot, string? outputDirectory)
         using var fileStream = File.Open(outputFile, FileMode.Create);
         fileStream.Write(Encoding.UTF8.GetBytes(output));
         fileStream.Close();
+
+        ModuleFinished?.Invoke(this, (sourcePath, true));
     }
 }
