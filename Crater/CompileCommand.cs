@@ -46,6 +46,8 @@ public class CompileCommand : Command<CompileCommand.Settings>
             Alignment = Justify.Left
         };
 
+        var hasErrors = false;
+
         AnsiConsole.Progress().Columns(spinnerColumn, descriptionColumn).Start(ctx =>
         {
             pipeline.ModuleStart += (_, path) =>
@@ -73,9 +75,14 @@ public class CompileCommand : Command<CompileCommand.Settings>
                     return;
 
                 if (reporter.hasErrors)
+                {
                     task.Description = $"Compiling [gray]{relative}[/] [red]FAILED[/]";
+                    hasErrors = true;
+                }
                 else
+                {
                     task.Description = $"Compiling [gray]{relative}[/] [green]SUCCESS[/]";
+                }
 
                 task.Value = task.MaxValue;
                 task.StopTask();
@@ -87,7 +94,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
         stopwatch.Stop();
         AnsiConsole.MarkupLineInterpolated($"Compilation finished ({FormatElapsedTime(stopwatch)})");
 
-        return 0;
+        return hasErrors ? 1 : 0;
     }
 
     private static string FormatElapsedTime(Stopwatch stopwatch)
