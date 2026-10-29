@@ -59,6 +59,8 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
 
+                var pipeline = new BuildPipeline();
+
                 var inputStream = new AntlrFileStream(sourceFile);
                 var craterLexer = new CraterLexer(inputStream);
                 var tokenStream = new CommonTokenStream(craterLexer);
@@ -69,7 +71,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
                 var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
                 var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
 
-                var semanticAnalyzer = new SemanticAnalyzer(reporter);
+                var semanticAnalyzer = new SemanticAnalyzer(pipeline, reporter);
                 semanticAnalyzer.AnalyzeProgram(program);
 
                 if (reporter.hasErrors)

@@ -10,6 +10,7 @@ namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer
 {
+    private readonly BuildPipeline _pipeline;
     private readonly IDiagnosticReporter _reporter;
 
     private readonly Environment _global;
@@ -19,8 +20,9 @@ public class SemanticAnalyzer
 
     private int _loopDepth;
 
-    public SemanticAnalyzer(IDiagnosticReporter reporter)
+    public SemanticAnalyzer(BuildPipeline pipeline, IDiagnosticReporter reporter)
     {
+        _pipeline = pipeline;
         _reporter = reporter;
 
         _types = new Dictionary<string, Type>()
@@ -819,7 +821,8 @@ public class SemanticAnalyzer
             return [TypeRegistry.UnknownType];
         }
 
-        // TODO: Parse and analyze the new module
+        _pipeline.BuildFile(modulePath);
+
 
         return [];
     }
