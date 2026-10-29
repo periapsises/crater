@@ -823,7 +823,10 @@ public class SemanticAnalyzer
 
         if (!_pipeline.PathResolver.TryGetPath(moduleName, out var modulePath))
         {
-            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
+            var attempts = _pipeline.PathResolver.GetAttemptPaths(moduleName);
+            var attemptsFormatted = string.Join('\n', attempts.Select(attempt => $"    {attempt}"));
+
+            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'. Searched for:\n{attemptsFormatted}", DiagnosticSeverity.Error, functionCall.source));
             return [TypeRegistry.UnknownType];
         }
 

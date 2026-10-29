@@ -24,4 +24,19 @@ public class PathResolver(string projectRoot)
         resolvedPath = null;
         return false;
     }
+
+    public IReadOnlyList<string> GetAttemptPaths(string moduleName)
+    {
+        var attempts = new List<string>();
+
+        var modulePath = moduleName.Replace('.', Path.DirectorySeparatorChar);
+
+        foreach (var pattern in _searchPatterns)
+        {
+            var relative = pattern.Replace("?", modulePath);
+            attempts.Add(Path.GetFullPath(Path.Combine(projectRoot, relative)));
+        }
+
+        return attempts;
+    }
 }
