@@ -12,9 +12,11 @@ namespace Crater.Compilation;
 
 public class BuildPipeline(string projectRoot, string? directory)
 {
+    public readonly string ProjectRoot = projectRoot;
+
     public readonly Environment GlobalEnvironment = new();
     public readonly PathResolver PathResolver = new(projectRoot);
-    public readonly HashSet<string> ModulesInProgress = [];
+    public readonly Stack<string> ModulesInProgress = [];
     public readonly Dictionary<string, List<(Type, Source)>> CompletedModules = [];
 
     public EventHandler<string>? ModuleStart;
@@ -22,12 +24,13 @@ public class BuildPipeline(string projectRoot, string? directory)
 
     public void BuildFile(string sourcePath)
     {
-        if (!ModulesInProgress.Add(sourcePath))
+        if (ModulesInProgress.Contains(sourcePath))
             throw new ArgumentException("This module is already in progress (cyclic dependency)", nameof(sourcePath));
 
+        ModulesInProgress.Push(sourcePath);
         ModuleStart?.Invoke(this, sourcePath);
 
-        var inputStream = new NamedFileStream(sourcePath, Path.GetRelativePath(projectRoot, sourcePath));
+        var inputStream = new NamedFileStream(sourcePath, Path.GetRelativePath(ProjectRoot, sourcePath));
         var craterLexer = new CraterLexer(inputStream);
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
@@ -44,7 +47,7 @@ public class BuildPipeline(string projectRoot, string? directory)
         {
             CompletedModules[sourcePath] = [];
 
-            ModulesInProgress.Remove(sourcePath);
+            ModulesInProgress.Pop();
             ModuleFinished?.Invoke(this, (sourcePath, reporter));
             return;
         }
@@ -61,7 +64,7 @@ public class BuildPipeline(string projectRoot, string? directory)
         }
         else
         {
-            outputDirectory = Path.IsPathRooted(directory) ? directory : Path.Combine(projectRoot, directory);
+            outputDirectory = Path.IsPathRooted(directory) ? directory : Path.Combine(ProjectRoot, directory);
             Directory.CreateDirectory(outputDirectory);
         }
 
@@ -70,7 +73,12 @@ public class BuildPipeline(string projectRoot, string? directory)
         fileStream.Write(Encoding.UTF8.GetBytes(output));
         fileStream.Close();
 
+        ModulesInProgress.Pop();
         ModuleFinished?.Invoke(this, (sourcePath, reporter));
-        ModulesInProgress.Remove(sourcePath);
+    }
+
+    public IReadOnlyList<string> GetCurrentRequireStack()
+    {
+        return ModulesInProgress.ToArray();
     }
 }

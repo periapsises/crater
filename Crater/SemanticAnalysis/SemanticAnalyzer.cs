@@ -832,7 +832,18 @@ public class SemanticAnalyzer
 
         if (_pipeline.ModulesInProgress.Contains(modulePath))
         {
-            _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
+            var requireStack = _pipeline.GetCurrentRequireStack();
+            var stackFormatted = string.Join(" -> ", requireStack.Reverse().Select(path =>
+            {
+                path = Path.GetRelativePath(_pipeline.ProjectRoot, path);
+                path = Path.ChangeExtension(path, null);
+                path = path.Replace(Path.DirectorySeparatorChar, '.');
+                return path;
+            }));
+
+            stackFormatted += $" -> [red]{moduleName}[/]";
+
+            _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}':\n    {stackFormatted}", DiagnosticSeverity.Error, functionCall.source));
             return [TypeRegistry.UnknownType];
         }
 
