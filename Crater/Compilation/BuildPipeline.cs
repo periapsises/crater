@@ -13,6 +13,7 @@ namespace Crater.Compilation;
 public class BuildPipeline(string projectRoot, string? directory)
 {
     public readonly Environment GlobalEnvironment = new();
+    public readonly PathResolver PathResolver = new(projectRoot);
     public readonly HashSet<string> ModulesInProgress = [];
     public readonly Dictionary<string, List<(Type, Source)>> CompletedModules = [];
 
@@ -60,7 +61,7 @@ public class BuildPipeline(string projectRoot, string? directory)
         }
         else
         {
-            outputDirectory = Path.IsPathRooted(directory) ? directory : Path.Combine(Path.GetDirectoryName(projectRoot)!, directory);
+            outputDirectory = Path.IsPathRooted(directory) ? directory : Path.Combine(projectRoot, directory);
             Directory.CreateDirectory(outputDirectory);
         }
 

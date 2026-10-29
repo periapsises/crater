@@ -2,18 +2,18 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Crater.Compilation;
 
-public static class PathResolver
+public class PathResolver(string projectRoot)
 {
-    private static readonly string[] SearchPatterns = ["?.cra", "?/init.cra"];
+    private readonly string[] _searchPatterns = ["?.cra", "?/init.cra"];
 
-    public static bool TryGetPath(string moduleName, [NotNullWhen(true)] out string? resolvedPath)
+    public bool TryGetPath(string moduleName, [NotNullWhen(true)] out string? resolvedPath)
     {
         var modulePath = moduleName.Replace('.', Path.DirectorySeparatorChar);
 
-        foreach (var pattern in SearchPatterns)
+        foreach (var pattern in _searchPatterns)
         {
             var relative = pattern.Replace("?", modulePath);
-            var candidate = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), relative));
+            var candidate = Path.GetFullPath(Path.Combine(projectRoot, relative));
             if (!File.Exists(candidate))
                 continue;
 

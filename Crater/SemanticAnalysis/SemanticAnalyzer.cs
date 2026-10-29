@@ -821,7 +821,7 @@ public class SemanticAnalyzer
 
         var moduleName = rawModuleName.value.Trim('"');
 
-        if (!PathResolver.TryGetPath(moduleName, out var modulePath))
+        if (!_pipeline.PathResolver.TryGetPath(moduleName, out var modulePath))
         {
             _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
             return [TypeRegistry.UnknownType];
