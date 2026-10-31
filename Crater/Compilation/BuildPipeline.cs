@@ -10,12 +10,12 @@ using Type = Crater.SemanticAnalysis.Type;
 
 namespace Crater.Compilation;
 
-public class BuildPipeline(string projectRoot, string? directory)
+public class BuildPipeline(string projectRoot, string? directory, string? pathOverride = null)
 {
     public readonly string ProjectRoot = projectRoot;
 
     public readonly Environment GlobalEnvironment = new();
-    public readonly PathResolver PathResolver = new(projectRoot);
+    public readonly PathResolver PathResolver = new(projectRoot, pathOverride);
     public readonly Stack<string> ModulesInProgress = [];
     public readonly Dictionary<string, Type> CompletedModules = [];
 

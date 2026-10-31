@@ -1,8 +1,22 @@
 namespace Crater.Compilation;
 
-public class PathResolver(string projectRoot)
+public class PathResolver
 {
-    private readonly string[] _searchPatterns = ["?.cra", "?/init.cra"];
+    private readonly string _projectRoot;
+    private readonly string[] _searchPatterns;
+
+    public PathResolver(string projectRoot, string? pattern = null)
+    {
+        _projectRoot = projectRoot;
+
+        if (string.IsNullOrEmpty(pattern))
+        {
+            _searchPatterns = ["?.cra", "?/init.cra"];
+            return;
+        }
+
+        _searchPatterns = pattern.Split(';');
+    }
 
     public IReadOnlyList<string> FindModule(string moduleName)
     {
@@ -29,7 +43,7 @@ public class PathResolver(string projectRoot)
         foreach (var pattern in _searchPatterns)
         {
             var relative = pattern.Replace("?", modulePath);
-            attempts.Add(Path.GetFullPath(Path.Combine(projectRoot, relative)));
+            attempts.Add(Path.GetFullPath(Path.Combine(_projectRoot, relative)));
         }
 
         return attempts;

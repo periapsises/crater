@@ -20,6 +20,10 @@ public class CompileCommand : Command<CompileCommand.Settings>
         [Description("The output directory for compiled Lua files.")]
         [CommandOption("-o|--outDir <DIRECTORY>")]
         public string? outputDirectory { get; init; }
+
+        [Description("Override the default LUA_PATH patterns.")]
+        [CommandOption("-p|--path <PATTERNS>")]
+        public string? pathOverride { get; init; }
     }
 
     protected override ValidationResult Validate(CommandContext context, Settings settings)
@@ -37,7 +41,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
         var projectSource = Path.GetFullPath(settings.source);
         var projectRoot = Path.GetDirectoryName(projectSource)!;
-        var pipeline = new BuildPipeline(projectRoot, settings.outputDirectory);
+        var pipeline = new BuildPipeline(projectRoot, settings.outputDirectory, settings.pathOverride);
 
         var tasks = new Dictionary<string, ProgressTask>();
 
