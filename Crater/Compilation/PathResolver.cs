@@ -1,4 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Crater.Compilation;
+
+public enum PathResolutionResult
+{
+    InvalidModuleName,
+    ModuleNotFound,
+    MultipleModulesFound,
+    Success
+}
 
 public class PathResolver
 {
@@ -18,12 +28,16 @@ public class PathResolver
         _searchPatterns = pattern.Split(';');
     }
 
-    public IReadOnlyList<string> FindModule(string moduleName)
+    public PathResolutionResult TryGetModule(string moduleName, out IReadOnlyList<string> path)
     {
-        var candidates = GetAttemptPaths(moduleName);
-        var matches = new List<string>();
+        if (!TryGetPathsFromName(moduleName, out var paths))
+        {
+            path = [];
+            return PathResolutionResult.InvalidModuleName;
+        }
 
-        foreach (var candidate in candidates)
+        var matches = new List<string>();
+        foreach (var candidate in paths)
         {
             if (!File.Exists(candidate))
                 continue;
@@ -31,21 +45,72 @@ public class PathResolver
             matches.Add(candidate);
         }
 
-        return matches;
+        if (matches.Count == 0)
+        {
+            path = [];
+            return PathResolutionResult.ModuleNotFound;
+        }
+
+        path = matches;
+        return matches.Count == 1 ? PathResolutionResult.Success : PathResolutionResult.MultipleModulesFound;
     }
 
-    public IReadOnlyList<string> GetAttemptPaths(string moduleName)
+    public bool TryGetPathsFromName(string moduleName, [NotNullWhen(true)] out IReadOnlyList<string>? paths)
     {
-        var attempts = new List<string>();
+        if (!TryGetRelativeFragment(moduleName, out var fragment))
+        {
+            paths = null;
+            return false;
+        }
 
-        var modulePath = moduleName.Replace('.', Path.DirectorySeparatorChar);
+        var candidates = new List<string>();
 
         foreach (var pattern in _searchPatterns)
         {
-            var relative = pattern.Replace("?", modulePath);
-            attempts.Add(Path.GetFullPath(Path.Combine(_projectRoot, relative)));
+            var relative = pattern.Replace("?", fragment);
+            var candidate = Path.GetFullPath(Path.Combine(_projectRoot, relative));
+
+            candidates.Add(candidate);
         }
 
-        return attempts;
+        paths = candidates;
+        return true;
+    }
+
+    private static bool TryGetRelativeFragment(string moduleName, out string fragment)
+    {
+        if (string.IsNullOrEmpty(moduleName))
+        {
+            fragment = "";
+            return false;
+        }
+
+        var segments = moduleName.Split('.');
+        foreach (var segment in segments)
+        {
+            if (IsIdentifier(segment))
+                continue;
+
+            fragment = "";
+            return false;
+        }
+
+        fragment = string.Join(Path.DirectorySeparatorChar, segments);
+        return true;
+    }
+
+    private static bool IsIdentifier(string segment)
+    {
+        if (segment.Length == 0 || !char.IsAsciiLetter(segment[0]) && segment[0] != '_')
+            return false;
+
+        for (var i = 1; i < segment.Length; i++)
+        {
+            var c = segment[i];
+            if (!char.IsAsciiLetterOrDigit(c) && c != '_')
+                return false;
+        }
+
+        return true;
     }
 }

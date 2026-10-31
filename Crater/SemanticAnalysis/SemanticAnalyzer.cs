@@ -827,25 +827,30 @@ public class SemanticAnalyzer
         }
 
         var moduleName = rawModuleName.value.Trim('"');
-        var matches = _pipeline.PathResolver.FindModule(moduleName);
 
-        if (matches.Count == 0)
+        var result = _pipeline.PathResolver.TryGetModule(moduleName, out var modulePaths);
+
+        switch (result)
         {
-            var attempts = _pipeline.PathResolver.GetAttemptPaths(moduleName);
-            var attemptsFormatted = string.Join('\n', attempts.Select(attempt => $"    {attempt}"));
-
-            _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'. Searched for:\n{attemptsFormatted}", DiagnosticSeverity.Error, functionCall.source));
-            return TypeRegistry.UnknownType;
+            case PathResolutionResult.InvalidModuleName:
+                _reporter.Report(new Diagnostic(SemanticWarnings.MalformedModuleName, $"Malformed module name '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
+                return TypeRegistry.UnknownType;
+            case PathResolutionResult.ModuleNotFound:
+                _pipeline.PathResolver.TryGetPathsFromName(moduleName, out var paths);
+                var attempts = string.Join('\n', paths!.Select(path => "    " + Path.GetRelativePath(_pipeline.ProjectRoot, path)));
+                _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not find module '{moduleName}'. Searched for:\n{attempts}", DiagnosticSeverity.Error, functionCall.source));
+                return TypeRegistry.UnknownType;
+            case PathResolutionResult.MultipleModulesFound:
+                var matchesFormatted = string.Join('\n', modulePaths.Select(path => "    " + Path.GetRelativePath(_pipeline.ProjectRoot, path)));
+                _reporter.Report(new Diagnostic(SemanticWarnings.MultipleModulesMatch, $"Found multiple matching modules for '{moduleName}':\n{matchesFormatted}", DiagnosticSeverity.Warning, functionCall.source));
+                break;
+            case PathResolutionResult.Success:
+                break;
+            default:
+                throw new SwitchExpressionException(result);
         }
 
-        if (matches.Count > 1)
-        {
-            var modulesFormatted = string.Join('\n', matches.Select(path => $"    {Path.GetRelativePath(_pipeline.ProjectRoot, path)}"));
-            _reporter.Report(new Diagnostic(SemanticWarnings.MultipleModulesMatch, $"Found multiple matching modules:\n{modulesFormatted}", DiagnosticSeverity.Warning, functionCall.source));
-        }
-
-        var modulePath = matches[0];
-
+        var modulePath = modulePaths[0];
         if (_pipeline.ModulesInProgress.Contains(modulePath))
         {
             var requireStack = _pipeline.GetCurrentRequireStack();
