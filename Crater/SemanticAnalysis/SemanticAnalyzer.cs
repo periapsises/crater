@@ -46,7 +46,9 @@ public class SemanticAnalyzer
         if (returns == null || returns.Count == 0)
             return TypeRegistry.BooleanType;
 
-        // TODO: Warning for modules returning more than one value
+        if (returns.Count > 1)
+            _reporter.Report(new Diagnostic(SemanticWarnings.TopLevelReturnsMultipleValues, "Top level returns for modules cannot return more than one value", DiagnosticSeverity.Warning, returns[1].Item2));
+
         return returns[0].Item1;
     }
 
