@@ -827,8 +827,9 @@ public class SemanticAnalyzer
         }
 
         var moduleName = rawModuleName.value.Trim('"');
+        var matches = _pipeline.PathResolver.FindModule(moduleName);
 
-        if (!_pipeline.PathResolver.TryGetPath(moduleName, out var modulePath))
+        if (matches.Count == 0)
         {
             var attempts = _pipeline.PathResolver.GetAttemptPaths(moduleName);
             var attemptsFormatted = string.Join('\n', attempts.Select(attempt => $"    {attempt}"));
@@ -836,6 +837,14 @@ public class SemanticAnalyzer
             _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not locate module '{moduleName}'. Searched for:\n{attemptsFormatted}", DiagnosticSeverity.Error, functionCall.source));
             return TypeRegistry.UnknownType;
         }
+
+        if (matches.Count > 1)
+        {
+            var modulesFormatted = string.Join('\n', matches.Select(path => $"    {Path.GetRelativePath(_pipeline.ProjectRoot, path)}"));
+            _reporter.Report(new Diagnostic(SemanticWarnings.MultipleModulesMatch, $"Found multiple matching modules:\n{modulesFormatted}", DiagnosticSeverity.Warning, functionCall.source));
+        }
+
+        var modulePath = matches[0];
 
         if (_pipeline.ModulesInProgress.Contains(modulePath))
         {

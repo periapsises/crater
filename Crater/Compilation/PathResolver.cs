@@ -1,26 +1,23 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Crater.Compilation;
 
 public class PathResolver(string projectRoot)
 {
     private readonly string[] _searchPatterns = ["?.cra", "?/init.cra"];
 
-    public bool TryGetPath(string moduleName, [NotNullWhen(true)] out string? resolvedPath)
+    public IReadOnlyList<string> FindModule(string moduleName)
     {
         var candidates = GetAttemptPaths(moduleName);
+        var matches = new List<string>();
 
         foreach (var candidate in candidates)
         {
             if (!File.Exists(candidate))
                 continue;
 
-            resolvedPath = candidate;
-            return true;
+            matches.Add(candidate);
         }
 
-        resolvedPath = null;
-        return false;
+        return matches;
     }
 
     public IReadOnlyList<string> GetAttemptPaths(string moduleName)
