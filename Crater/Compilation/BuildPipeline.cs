@@ -35,7 +35,7 @@ public class BuildPipeline(string projectRoot, string? directory)
         var tokenStream = new CommonTokenStream(craterLexer);
         var craterParser = new CraterParser(tokenStream);
 
-        var reporter = new ErrorReporter();
+        var reporter = new DiagnosticBag();
 
         var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
         var program = (Program)syntaxTreeConverter.Visit(craterParser.program());

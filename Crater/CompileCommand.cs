@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Crater.Compilation;
+using Crater.Diagnostics;
+using Crater.Diagnostics.Codes;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -44,6 +47,7 @@ public class CompileCommand : Command<CompileCommand.Settings>
             Alignment = Justify.Left
         };
 
+        var diagnostics = new List<(string, IDiagnosticReporter)>();
         var hasErrors = false;
 
         AnsiConsole.Progress().Columns(spinnerColumn, descriptionColumn).Start(ctx =>
@@ -84,10 +88,27 @@ public class CompileCommand : Command<CompileCommand.Settings>
 
                 task.Value = task.MaxValue;
                 task.StopTask();
+
+                diagnostics.Add((path, reporter));
             };
 
             pipeline.BuildFile(projectSource);
         });
+
+        foreach (var diagnosticReport in diagnostics)
+        {
+            if (diagnosticReport.Item2.diagnostics.Count == 0)
+                continue;
+
+            var path = Path.GetRelativePath(projectRoot, diagnosticReport.Item1);
+            AnsiConsole.MarkupLineInterpolated($"Diagnostics for [gray]{path}[/]:\n");
+
+            foreach (var diagnostic in diagnosticReport.Item2.diagnostics)
+            {
+                PrintDiagnostic(diagnostic);
+                AnsiConsole.WriteLine();
+            }
+        }
 
         stopwatch.Stop();
         AnsiConsole.MarkupLineInterpolated($"Compilation finished ({FormatElapsedTime(stopwatch)})");
@@ -106,5 +127,37 @@ public class CompileCommand : Command<CompileCommand.Settings>
             return $"{stopwatch.ElapsedMilliseconds} ms";
 
         return stopwatch.Elapsed.ToString(@"mm\:ss");
+    }
+
+    private static void PrintDiagnostic(Diagnostic diagnostic)
+    {
+        var severityColor = diagnostic.severity switch
+        {
+            DiagnosticSeverity.Info => "blue",
+            DiagnosticSeverity.Warning => "yellow",
+            DiagnosticSeverity.Error => "red",
+            DiagnosticSeverity.Fatal => "red",
+            _ => throw new SwitchExpressionException(diagnostic.severity)
+        };
+
+        var severityCode = diagnostic.severity switch
+        {
+            DiagnosticSeverity.Info => "Info",
+            DiagnosticSeverity.Warning => "Warn",
+            DiagnosticSeverity.Error => "Error",
+            DiagnosticSeverity.Fatal => "Fatal",
+            _ => throw new SwitchExpressionException(diagnostic.severity)
+        };
+
+        AnsiConsole.MarkupLineInterpolated($"[yellow underline]{diagnostic.source.File}:{diagnostic.source.StartLine}:{diagnostic.source.StartColumn}[/] - [{severityColor} bold]{severityCode}[/] [lightcyan1]{diagnostic.code}[/]:");
+
+        var message = diagnostic.message;
+        if (diagnostic.code == SemanticWarnings.CyclicModuleDependency)
+        {
+            var insertPosition = message.LastIndexOf("->", StringComparison.Ordinal) + 2;
+            message = message[..insertPosition] + "[red]" + message[insertPosition..] + "[/]";
+        }
+
+        AnsiConsole.MarkupLine("  " + message);
     }
 }
