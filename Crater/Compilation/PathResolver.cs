@@ -8,12 +8,10 @@ public class PathResolver(string projectRoot)
 
     public bool TryGetPath(string moduleName, [NotNullWhen(true)] out string? resolvedPath)
     {
-        var modulePath = moduleName.Replace('.', Path.DirectorySeparatorChar);
+        var candidates = GetAttemptPaths(moduleName);
 
-        foreach (var pattern in _searchPatterns)
+        foreach (var candidate in candidates)
         {
-            var relative = pattern.Replace("?", modulePath);
-            var candidate = Path.GetFullPath(Path.Combine(projectRoot, relative));
             if (!File.Exists(candidate))
                 continue;
 
