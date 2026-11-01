@@ -1,13 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 using Crater.Antlr;
 using Crater.Diagnostics;
 using Crater.SemanticAnalysis;
 using Crater.SyntaxTree;
 using Environment = Crater.SemanticAnalysis.Environment;
-using Env = System.Environment;
 using Type = Crater.SemanticAnalysis.Type;
 
 namespace Crater.Compilation;
