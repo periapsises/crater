@@ -1,14 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
-using Antlr4.Runtime;
-using Crater.Antlr;
+using System.Runtime.CompilerServices;
 using Crater.Compilation;
-using Crater.SemanticAnalysis;
-using Crater.SyntaxTree;
+using Crater.Diagnostics;
+using Crater.Diagnostics.Codes;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Environment = System.Environment;
 
 namespace Crater;
 
@@ -16,100 +13,111 @@ public class CompileCommand : Command<CompileCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
-        [Description("The source file or directory to compile.")]
-        [CommandArgument(0, "<TARGET>")]
-        public required string target { get; init; }
+        [Description("The source file to compile.")]
+        [CommandArgument(0, "<SOURCE>")]
+        public required string source { get; init; }
 
         [Description("The output directory for compiled Lua files.")]
         [CommandOption("-o|--outDir <DIRECTORY>")]
         public string? outputDirectory { get; init; }
-    }
 
-    private readonly List<string> _sourceFiles = [];
+        [Description("Override the default LUA_PATH patterns.")]
+        [CommandOption("-p|--path <PATTERNS>")]
+        public string? pathOverride { get; init; }
+    }
 
     protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
-        if (File.Exists(settings.target))
-        {
-            _sourceFiles.Add(settings.target);
+        if (File.Exists(settings.source))
             return ValidationResult.Success();
-        }
 
-        if (Directory.Exists(settings.target))
-        {
-            _sourceFiles.AddRange(Directory.GetFiles(settings.target, "*.cra"));
-            return ValidationResult.Success();
-        }
-
-        return ValidationResult.Error($"The target path '{settings.target}' does not exist.");
+        return ValidationResult.Error($"The source file '{settings.source}' does not exist.");
     }
 
     protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var targetFullPath = Path.GetFullPath(settings.target);
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
 
-        var exitCode = 0;
+        var projectSource = Path.GetFullPath(settings.source);
+        var projectRoot = Path.GetDirectoryName(projectSource)!;
+        var pipeline = new BuildPipeline(projectRoot, settings.outputDirectory, settings.pathOverride);
 
-        AnsiConsole.Status().SpinnerStyle(Style.Parse("blue")).Start("Compiling", ctx =>
+        var tasks = new Dictionary<string, ProgressTask>();
+
+        var spinnerColumn = new SpinnerColumn();
+        var descriptionColumn = new TaskDescriptionColumn
         {
-            foreach (var sourceFile in _sourceFiles)
+            Alignment = Justify.Left
+        };
+
+        var diagnostics = new List<(string, IDiagnosticReporter)>();
+        var hasErrors = false;
+
+        AnsiConsole.Progress().Columns(spinnerColumn, descriptionColumn).Start(ctx =>
+        {
+            pipeline.ModuleStart += (_, path) =>
             {
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
+                var relative = Path.GetRelativePath(projectRoot, path);
 
-                ctx.Status($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/]");
+                foreach (var kvp in tasks)
+                {
+                    if (kvp.Value.IsFinished && kvp.Key != path)
+                        kvp.Value.Description = $"Compiling [gray]{Path.GetRelativePath(projectRoot, kvp.Key)} (waiting)[/]";
+                }
 
-                var inputStream = new AntlrFileStream(sourceFile);
-                var craterLexer = new CraterLexer(inputStream);
-                var tokenStream = new CommonTokenStream(craterLexer);
-                var craterParser = new CraterParser(tokenStream);
+                var task = ctx.AddTask($"Compiling [yellow]{relative}[/]", autoStart: true);
+                task.IsIndeterminate = true;
+                tasks[path] = task;
+            };
 
-                var reporter = new ErrorReporter();
+            pipeline.ModuleFinished += (_, status) =>
+            {
+                var path = status.Item1;
+                var reporter = status.Item2;
+                var relative = Path.GetRelativePath(projectRoot, path);
 
-                var syntaxTreeConverter = new SyntaxTreeConverter(reporter);
-                var program = (Program)syntaxTreeConverter.Visit(craterParser.program());
-
-                var semanticAnalyzer = new SemanticAnalyzer(reporter);
-                semanticAnalyzer.AnalyzeProgram(program);
+                if (!tasks.TryGetValue(path, out var task))
+                    return;
 
                 if (reporter.hasErrors)
                 {
-                    stopwatch.Stop();
-                    AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [red]FAILED[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
-
-                    exitCode = 1;
-                    continue;
-                }
-
-                var output = Compiler.Compile(program);
-
-                var fullSourcePath = Path.GetFullPath(sourceFile);
-
-                string outputDirectory;
-                if (string.IsNullOrEmpty(settings.outputDirectory))
-                {
-                    outputDirectory = Path.GetDirectoryName(fullSourcePath) ?? Environment.CurrentDirectory;
+                    task.Description = $"Compiling [gray]{relative}[/] [red]FAILED[/]";
+                    hasErrors = true;
                 }
                 else
                 {
-                    outputDirectory = Path.IsPathRooted(settings.outputDirectory)
-                        ? settings.outputDirectory
-                        : Path.Combine(Path.GetDirectoryName(targetFullPath)!, settings.outputDirectory);
-
-                    Directory.CreateDirectory(outputDirectory);
+                    task.Description = $"Compiling [gray]{relative}[/] [green]SUCCESS[/]";
                 }
 
-                var outputFile = Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(sourceFile) + ".lua");
-                using var fileStream = File.Open(outputFile, FileMode.Create);
-                fileStream.Write(Encoding.UTF8.GetBytes(output));
-                fileStream.Close();
+                task.Value = task.MaxValue;
+                task.StopTask();
 
-                stopwatch.Stop();
-                AnsiConsole.MarkupLineInterpolated($"Compiling [cyan]{Path.GetFileName(sourceFile)}[/] [green]SUCCESS[/] [gray]({FormatElapsedTime(stopwatch)})[/]");
-            }
+                diagnostics.Add((path, reporter));
+            };
+
+            pipeline.BuildFile(projectSource);
         });
 
-        return exitCode;
+        foreach (var diagnosticReport in diagnostics)
+        {
+            if (diagnosticReport.Item2.diagnostics.Count == 0)
+                continue;
+
+            var path = Path.GetRelativePath(projectRoot, diagnosticReport.Item1);
+            AnsiConsole.MarkupLineInterpolated($"Diagnostics for [gray]{path}[/]:\n");
+
+            foreach (var diagnostic in diagnosticReport.Item2.diagnostics)
+            {
+                PrintDiagnostic(diagnostic);
+                AnsiConsole.WriteLine();
+            }
+        }
+
+        stopwatch.Stop();
+        AnsiConsole.MarkupLineInterpolated($"Compilation finished ({FormatElapsedTime(stopwatch)})");
+
+        return hasErrors ? 1 : 0;
     }
 
     private static string FormatElapsedTime(Stopwatch stopwatch)
@@ -123,5 +131,37 @@ public class CompileCommand : Command<CompileCommand.Settings>
             return $"{stopwatch.ElapsedMilliseconds} ms";
 
         return stopwatch.Elapsed.ToString(@"mm\:ss");
+    }
+
+    private static void PrintDiagnostic(Diagnostic diagnostic)
+    {
+        var severityColor = diagnostic.severity switch
+        {
+            DiagnosticSeverity.Info => "blue",
+            DiagnosticSeverity.Warning => "yellow",
+            DiagnosticSeverity.Error => "red",
+            DiagnosticSeverity.Fatal => "red",
+            _ => throw new SwitchExpressionException(diagnostic.severity)
+        };
+
+        var severityCode = diagnostic.severity switch
+        {
+            DiagnosticSeverity.Info => "Info",
+            DiagnosticSeverity.Warning => "Warn",
+            DiagnosticSeverity.Error => "Error",
+            DiagnosticSeverity.Fatal => "Fatal",
+            _ => throw new SwitchExpressionException(diagnostic.severity)
+        };
+
+        AnsiConsole.MarkupLineInterpolated($"[yellow underline]{diagnostic.source.File}:{diagnostic.source.StartLine}:{diagnostic.source.StartColumn}[/] - [{severityColor} bold]{severityCode}[/] [lightcyan1]{diagnostic.code}[/]:");
+
+        var message = diagnostic.message;
+        if (diagnostic.code == SemanticWarnings.CyclicModuleDependency)
+        {
+            var insertPosition = message.LastIndexOf("->", StringComparison.Ordinal) + 2;
+            message = message[..insertPosition] + "[red]" + message[insertPosition..] + "[/]";
+        }
+
+        AnsiConsole.MarkupLine("  " + message);
     }
 }

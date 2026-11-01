@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Crater.Compilation;
 using Crater.Diagnostics;
 using Crater.Diagnostics.Codes;
 using Crater.SemanticAnalysis.Types;
@@ -9,17 +10,18 @@ namespace Crater.SemanticAnalysis;
 
 public class SemanticAnalyzer
 {
+    private readonly BuildPipeline _pipeline;
     private readonly IDiagnosticReporter _reporter;
 
-    private readonly Environment _global;
     private Environment _local;
 
     private readonly Dictionary<string, Type> _types;
 
     private int _loopDepth;
 
-    public SemanticAnalyzer(IDiagnosticReporter reporter)
+    public SemanticAnalyzer(BuildPipeline pipeline, IDiagnosticReporter reporter)
     {
+        _pipeline = pipeline;
         _reporter = reporter;
 
         _types = new Dictionary<string, Type>()
@@ -30,24 +32,30 @@ public class SemanticAnalyzer
             { "bool", TypeRegistry.BooleanType }
         };
 
-        _global = new Environment();
-        _local = new Environment(_global);
-
-        Library.Load(_global);
+        _local = new Environment(pipeline.GlobalEnvironment);
     }
 
     private void EnterScope() => _local = new Environment(_local);
 
     private void ExitScope() => _local = _local.Parent ?? throw new NullReferenceException("Cannot exit global scope");
 
-    public void AnalyzeProgram(Program program)
+    public Type AnalyzeProgram(Program program)
     {
-        AnalyzeBlock(program.block);
+        AnalyzeBlock(program.block, out var returns);
+
+        if (returns == null || returns.Count == 0)
+            return TypeRegistry.BooleanType;
+
+        if (returns.Count > 1)
+            _reporter.Report(new Diagnostic(SemanticWarnings.TopLevelReturnsMultipleValues, "Top level returns for modules cannot return more than one value", DiagnosticSeverity.Warning, returns[1].Item2));
+
+        return returns[0].Item1;
     }
 
-    private bool AnalyzeBlock(Block block, List<Type>? expectedReturns = null)
+    private bool AnalyzeBlock(Block block, out List<(Type, Source)>? actualReturns, List<Type>? expectedReturns = null)
     {
         var blocking = false;
+        actualReturns = null;
 
         foreach (var statement in block.statements)
         {
@@ -84,7 +92,7 @@ public class SemanticAnalyzer
                     AnalyzeGenericForLoop(genericForLoop);
                     break;
                 case ReturnStatement returnStatement:
-                    AnalyzeReturnStatement(returnStatement, expectedReturns);
+                    actualReturns = AnalyzeReturnStatement(returnStatement, expectedReturns);
                     blocking = true;
                     break;
                 case BreakStatement breakStatement:
@@ -100,7 +108,7 @@ public class SemanticAnalyzer
 
     private void AnalyzeVariableDeclaration(VariableDeclaration variableDeclaration)
     {
-        var env = variableDeclaration.local ? _local : _global;
+        var env = variableDeclaration.local ? _local : _pipeline.GlobalEnvironment;
 
         var initializerTypes = ExpandExpressionList(variableDeclaration.initializers);
 
@@ -146,7 +154,7 @@ public class SemanticAnalyzer
 
     private void AnalyzeFunctionDeclaration(FunctionDeclaration functionDeclaration)
     {
-        var env = functionDeclaration.local ? _local : _global;
+        var env = functionDeclaration.local ? _local : _pipeline.GlobalEnvironment;
 
         if (_local.GetType(functionDeclaration.name) != null)
             _reporter.Report(new Diagnostic(SemanticWarnings.VariableShadowing, $"Function '{functionDeclaration.name}' shadows an existing binding", DiagnosticSeverity.Warning, functionDeclaration.source));
@@ -179,7 +187,7 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        var blocked = AnalyzeBlock(functionDeclaration.block, returnTypes);
+        var blocked = AnalyzeBlock(functionDeclaration.block, out _, returnTypes);
         if (!blocked && returnTypes.Count != 0)
             _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function '{functionDeclaration.name}'", DiagnosticSeverity.Error, functionDeclaration.source));
 
@@ -190,7 +198,7 @@ public class SemanticAnalyzer
     private void AnalyzeDoStatement(DoStatement doStatement)
     {
         EnterScope();
-        AnalyzeBlock(doStatement.block);
+        AnalyzeBlock(doStatement.block, out _);
         ExitScope();
     }
 
@@ -199,7 +207,7 @@ public class SemanticAnalyzer
         AnalyzeExpression(ifStatement.condition);
 
         EnterScope();
-        var mainIsBlocking = AnalyzeBlock(ifStatement.block, expectedReturns);
+        var mainIsBlocking = AnalyzeBlock(ifStatement.block, out _, expectedReturns);
         ExitScope();
 
         var allElseIfsBlocking = true;
@@ -218,7 +226,7 @@ public class SemanticAnalyzer
         AnalyzeExpression(elseIfStatement.condition);
 
         EnterScope();
-        var blocking = AnalyzeBlock(elseIfStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseIfStatement.block, out _, expectedReturns);
         ExitScope();
 
         return blocking;
@@ -227,7 +235,7 @@ public class SemanticAnalyzer
     private bool AnalyzeElseStatement(ElseStatement elseStatement, List<Type>? expectedReturns = null)
     {
         EnterScope();
-        var blocking = AnalyzeBlock(elseStatement.block, expectedReturns);
+        var blocking = AnalyzeBlock(elseStatement.block, out _, expectedReturns);
         ExitScope();
 
         return blocking;
@@ -250,7 +258,7 @@ public class SemanticAnalyzer
             else if (!variableType.CanHold(valueType.Item1))
             {
                 if (variableType is TableType && valueType.Item1 is TableType)
-                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"The contents of the assigned table do not match the declared type'", DiagnosticSeverity.Error, valueType.Item2));
+                    _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, "The contents of the assigned table do not match the declared type'", DiagnosticSeverity.Error, valueType.Item2));
                 else
                     _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Cannot assign value of type '{valueType.Item1}' to variable of type '{variableType}'", DiagnosticSeverity.Error, valueType.Item2));
             }
@@ -308,7 +316,7 @@ public class SemanticAnalyzer
 
         EnterScope();
         _loopDepth++;
-        AnalyzeBlock(whileLoop.block);
+        AnalyzeBlock(whileLoop.block, out _);
         _loopDepth--;
         ExitScope();
     }
@@ -317,7 +325,7 @@ public class SemanticAnalyzer
     {
         EnterScope();
         _loopDepth++;
-        AnalyzeBlock(repeatLoop.block);
+        AnalyzeBlock(repeatLoop.block, out _);
         AnalyzeExpression(repeatLoop.condition);
         _loopDepth--;
         ExitScope();
@@ -343,7 +351,7 @@ public class SemanticAnalyzer
         EnterScope();
         _loopDepth++;
         _local.Define(numericForLoop.variable, TypeRegistry.NumberType);
-        AnalyzeBlock(numericForLoop.block);
+        AnalyzeBlock(numericForLoop.block, out _);
         _loopDepth--;
         ExitScope();
     }
@@ -383,18 +391,19 @@ public class SemanticAnalyzer
             }
         }
 
-        AnalyzeBlock(genericForLoop.block);
+        AnalyzeBlock(genericForLoop.block, out _);
 
         _loopDepth--;
         ExitScope();
     }
 
-    private void AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)
+    private List<(Type, Source)> AnalyzeReturnStatement(ReturnStatement returnStatement, List<Type>? expectedReturnTypes = null)
     {
         var returnTypes = ExpandExpressionList(returnStatement.returnValues);
         if (expectedReturnTypes == null)
-            return;
+            return returnTypes;
 
+        var allTypesValid = true;
         for (var i = 0; i < expectedReturnTypes.Count; i++)
         {
             var expectedType = expectedReturnTypes[i];
@@ -405,12 +414,19 @@ public class SemanticAnalyzer
                     continue;
 
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected to return '{expectedType}' but got '{returnTypes[i].Item1}", DiagnosticSeverity.Error, returnTypes[i].Item2));
+                allTypesValid = false;
             }
             else if (expectedType is not NullableType)
             {
                 _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, $"Expected a '{expectedType}' value to be returned", DiagnosticSeverity.Error, returnStatement.source));
+                allTypesValid = false;
             }
         }
+
+        if (allTypesValid)
+            return returnTypes;
+
+        return [(TypeRegistry.UnknownType, returnStatement.source)];
     }
 
     private void AnalyzeBreakStatement(BreakStatement breakStatement)
@@ -607,7 +623,7 @@ public class SemanticAnalyzer
             _local.Define(name, parameterTypes[i]);
         }
 
-        var blocked = AnalyzeBlock(functionLiteral.block, returnTypes);
+        var blocked = AnalyzeBlock(functionLiteral.block, out _, returnTypes);
         if (!blocked && returnTypes.Count != 0)
             _reporter.Report(new Diagnostic(TypeErrors.NotAllPathsReturn, $"Not all code paths return a value in function", DiagnosticSeverity.Error, functionLiteral.source));
 
@@ -707,6 +723,9 @@ public class SemanticAnalyzer
             return [TypeRegistry.UnknownType];
         }
 
+        if (prefixType is RequireFunction)
+            return [AnalyzeRequire(functionCall)];
+
         var argumentTypes = ExpandExpressionList(functionCall.arguments);
 
         for (var i = 0; i < functionType.ParameterTypes.Count; i++)
@@ -791,5 +810,67 @@ public class SemanticAnalyzer
         }
 
         return results;
+    }
+
+    private Type AnalyzeRequire(FunctionCall functionCall)
+    {
+        if (functionCall.arguments.Count == 0)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.MissingArgument, "Missing string argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
+            return TypeRegistry.UnknownType;
+        }
+
+        if (functionCall.arguments.Count > 1 || functionCall.arguments.First() is not StringLiteral rawModuleName)
+        {
+            _reporter.Report(new Diagnostic(TypeErrors.TypeMismatch, "Expected a single string literal as argument for 'require'", DiagnosticSeverity.Error, functionCall.source));
+            return TypeRegistry.UnknownType;
+        }
+
+        var moduleName = rawModuleName.value.Trim('"');
+
+        var result = _pipeline.PathResolver.TryGetModule(moduleName, out var modulePaths);
+
+        switch (result)
+        {
+            case PathResolutionResult.InvalidModuleName:
+                _reporter.Report(new Diagnostic(SemanticWarnings.MalformedModuleName, $"Malformed module name '{moduleName}'", DiagnosticSeverity.Error, functionCall.source));
+                return TypeRegistry.UnknownType;
+            case PathResolutionResult.ModuleNotFound:
+                _pipeline.PathResolver.TryGetPathsFromName(moduleName, out var paths);
+                var attempts = string.Join('\n', paths!.Select(path => "    " + Path.GetRelativePath(_pipeline.ProjectRoot, path)));
+                _reporter.Report(new Diagnostic(SemanticWarnings.ModuleNotFound, $"Could not find module '{moduleName}'. Searched for:\n{attempts}", DiagnosticSeverity.Error, functionCall.source));
+                return TypeRegistry.UnknownType;
+            case PathResolutionResult.MultipleModulesFound:
+                var matchesFormatted = string.Join('\n', modulePaths.Select(path => "    " + Path.GetRelativePath(_pipeline.ProjectRoot, path)));
+                _reporter.Report(new Diagnostic(SemanticWarnings.MultipleModulesMatch, $"Found multiple matching modules for '{moduleName}':\n{matchesFormatted}", DiagnosticSeverity.Warning, functionCall.source));
+                break;
+            case PathResolutionResult.Success:
+                break;
+            default:
+                throw new SwitchExpressionException(result);
+        }
+
+        var modulePath = modulePaths[0];
+        if (_pipeline.ModulesInProgress.Contains(modulePath))
+        {
+            var requireStack = _pipeline.GetCurrentRequireStack();
+            var stackFormatted = string.Join(" -> ", requireStack.Reverse().Select(path =>
+            {
+                path = Path.GetRelativePath(_pipeline.ProjectRoot, path);
+                path = Path.ChangeExtension(path, null);
+                path = path.Replace(Path.DirectorySeparatorChar, '.');
+                return path;
+            }));
+
+            stackFormatted += $" -> {moduleName}";
+
+            _reporter.Report(new Diagnostic(SemanticWarnings.CyclicModuleDependency, $"Cyclic dependency in module '{moduleName}':\n    {stackFormatted}", DiagnosticSeverity.Error, functionCall.source));
+            return TypeRegistry.UnknownType;
+        }
+
+        if (!_pipeline.CompletedModules.ContainsKey(modulePath))
+            _pipeline.BuildFile(modulePath);
+
+        return _pipeline.CompletedModules[modulePath];
     }
 }
